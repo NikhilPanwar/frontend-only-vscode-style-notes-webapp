@@ -1,0 +1,16 @@
+{
+  "name": "VS Code Notes",
+  "short_name": "VSNotes",
+  "description": "An offline-first VS Code-styled notes workspace with folder tree and date views, syntax highlighting, search, tabs, HTML/Markdown previews, Excalidraw visual diagram editor, and theme support.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#18181b",
+  "theme_color": "#007acc",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

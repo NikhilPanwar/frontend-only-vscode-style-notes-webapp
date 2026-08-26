@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#007ACC"/>
+      <stop offset="100%" stop-color="#005A9E"/>
+    </linearGradient>
+    <linearGradient id="foldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Document / Workspace Tile -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#18181B"/>
+  <rect x="4" y="4" width="56" height="56" rx="14" stroke="#27272A" stroke-width="1.5"/>
+
+  <!-- VS Code Ribbon Infinity Fold Motif -->
+  <path d="M43.5 16.5L25.8 30.2L16.2 23L11.5 26.5L21.5 34.5L11.5 42.5L16.2 46L25.8 38.8L43.5 52.5C45.8 54.3 49 52.6 49 49.7V19.3C49 16.4 45.8 14.7 43.5 16.5Z" fill="url(#bgGrad)" filter="url(#shadow)"/>
+  
+  <!-- Ribbon Upper Overlap -->
+  <path d="M43.5 16.5L25.8 30.2L35.2 37.8L49 27.2V19.3C49 16.4 45.8 14.7 43.5 16.5Z" fill="url(#foldGrad)" opacity="0.95"/>
+
+  <!-- Note Lines Accent -->
+  <circle cx="16" cy="34.5" r="2.5" fill="#38BDF8"/>
+  <line x1="28" y1="45" x2="38" y2="45" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+</svg>
