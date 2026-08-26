@@ -27,7 +27,7 @@ import {
 import { TreeClipboardState } from './components/FileTree';
 import { THEMES } from './utils/themes';
 import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile } from './utils/languageDetector';
-import { DEFAULT_EXCALIDRAW_DATA } from './utils/excalidrawTemplates';
+import { EMPTY_EXCALIDRAW_DATA } from './utils/excalidrawTemplates';
 import { TitleBar } from './components/TitleBar';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
@@ -144,6 +144,10 @@ export default function App() {
     } catch {}
   }, [currentTheme, settings]);
 
+  // Keep ref for immediate flush on beforeunload / visibilitychange
+  const workspaceRef = useRef<Workspace | null>(workspace);
+  workspaceRef.current = workspace;
+
   // Debounced Auto-Save to IndexedDB whenever workspace updates
   useEffect(() => {
     if (!workspace) return;
@@ -156,12 +160,34 @@ export default function App() {
     saveTimeoutRef.current = setTimeout(async () => {
       await saveWorkspace(workspace);
       setIsSaving(false);
-    }, 400);
+    }, 250);
 
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, [workspace]);
+
+  // Guaranteed flush on window unload or tab backgrounding
+  useEffect(() => {
+    const handleFlush = () => {
+      if (workspaceRef.current) {
+        saveWorkspace(workspaceRef.current);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleFlush);
+    window.addEventListener('pagehide', handleFlush);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        handleFlush();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleFlush);
+      window.removeEventListener('pagehide', handleFlush);
+    };
+  }, []);
 
   // Derived variables
   const files = workspace?.files || {};
@@ -361,7 +387,7 @@ export default function App() {
 
       const finalContent =
         !content && isExcal
-          ? JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2)
+          ? JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2)
           : content;
       const size = calculateStringSizeBytes(finalContent);
 

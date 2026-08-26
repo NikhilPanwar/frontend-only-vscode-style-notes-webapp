@@ -43,13 +43,19 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const monacoRef = useRef<Monaco | null>(null);
 
   // Local state for debounced text to keep typing super responsive
-  const [localContent, setLocalContent] = useState<string>('');
+  const [prevFileId, setPrevFileId] = useState<string | null>(activeFile?.id || null);
+  const [localContent, setLocalContent] = useState<string>(activeFile?.content || '');
   const [sizeWarning, setSizeWarning] = useState<string | null>(null);
   const [isDragOverEditor, setIsDragOverEditor] = useState(false);
 
+  // Synchronize immediately during render when activeFile changes to avoid stale render lag
+  if (activeFile && activeFile.id !== prevFileId) {
+    setPrevFileId(activeFile.id);
+    setLocalContent(activeFile.content || '');
+  }
+
   useEffect(() => {
     if (activeFile) {
-      setLocalContent(activeFile.content || '');
       const bytes = calculateStringSizeBytes(activeFile.content || '');
       if (bytes > MAX_NOTE_SIZE_BYTES) {
         setSizeWarning(`Note exceeds 1MB limit (${formatBytes(bytes)} / 1.00 MB)`);
@@ -308,10 +314,15 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
             )}
             {isExcalidraw && (
               <ExcalidrawEditor
-                content={localContent}
+                key={activeFile.id}
+                fileId={activeFile.id}
+                content={activeFile.content || ''}
                 filename={activeFile.name}
                 currentTheme={currentTheme}
-                onUpdateContent={(newContent) => handleEditorChange(newContent)}
+                onUpdateContent={(fId, newContent) => {
+                  setLocalContent(newContent);
+                  onContentChange(fId, newContent);
+                }}
               />
             )}
           </div>

@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Excalidraw, exportToBlob, exportToSvg } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { ThemeType } from '../types';
 import { THEMES } from '../utils/themes';
-import { parseExcalidrawContent, DEFAULT_EXCALIDRAW_DATA, FLOWCHART_EXCALIDRAW_DATA, EMPTY_EXCALIDRAW_DATA } from '../utils/excalidrawTemplates';
-import { Download, Image as ImageIcon, Sparkles, RefreshCw, ZoomIn, FileCode, Check, ChevronDown } from 'lucide-react';
+import { parseExcalidrawContent, EMPTY_EXCALIDRAW_DATA } from '../utils/excalidrawTemplates';
+import { Download, Image as ImageIcon, Sparkles, RefreshCw, Check } from 'lucide-react';
 
 interface ExcalidrawEditorProps {
+  fileId: string;
   content: string;
   filename: string;
   currentTheme: ThemeType;
-  onUpdateContent: (newContent: string) => void;
+  onUpdateContent: (fileId: string, newContent: string) => void;
 }
 
 export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
+  fileId,
   content,
   filename,
   currentTheme,
@@ -24,21 +26,33 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
   const [exporting, setExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Tracking refs to avoid circular updates between Monaco code editor and Excalidraw
-  const lastSerializedJsonRef = useRef<string>(content);
-  const isInternalUpdateRef = useRef<boolean>(false);
-  const initialDataRef = useRef<any>(null);
+  // Stable refs to prevent stale closure bugs across tab switching & unmounts
+  const fileIdRef = useRef<string>(fileId);
+  fileIdRef.current = fileId;
+  const onUpdateContentRef = useRef(onUpdateContent);
+  onUpdateContentRef.current = onUpdateContent;
 
-  if (!initialDataRef.current) {
-    initialDataRef.current = parseExcalidrawContent(content);
-  }
+  // Track the last JSON string saved or received
+  const lastSavedJsonRef = useRef<string>(content || '');
+  const latestSceneDataRef = useRef<string>(content || '');
+  const isInternalUpdateRef = useRef<boolean>(false);
+  const debounceTimerRef = useRef<any>(null);
+
+  // Parse initial data once for this component instance (keyed by fileId in parent)
+  const initialData = useMemo(() => {
+    const parsed = parseExcalidrawContent(content);
+    const initialJson = JSON.stringify(parsed, null, 2);
+    lastSavedJsonRef.current = initialJson;
+    latestSceneDataRef.current = initialJson;
+    return parsed;
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  // Sync external text edits (e.g. from Monaco JSON editor) into Excalidraw canvas
+  // Sync external text edits (e.g. from Monaco in split view) into Excalidraw canvas
   useEffect(() => {
     if (!excalidrawAPI) return;
     if (isInternalUpdateRef.current) {
@@ -46,10 +60,11 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
       return;
     }
 
-    if (content !== lastSerializedJsonRef.current) {
+    if (content && content !== lastSavedJsonRef.current && content !== latestSceneDataRef.current) {
       try {
         const parsed = parseExcalidrawContent(content);
-        lastSerializedJsonRef.current = content;
+        lastSavedJsonRef.current = content;
+        latestSceneDataRef.current = content;
         excalidrawAPI.updateScene({
           elements: parsed.elements || [],
           appState: {
@@ -60,40 +75,60 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
           commitToHistory: true,
         });
       } catch {
-        // Ignore parsing errors while user is actively typing invalid intermediate JSON in the editor
+        // Ignore parsing errors during intermediate typing in Monaco
       }
     }
   }, [content, excalidrawAPI, theme.isDark]);
 
-  // Handle internal updates from Excalidraw canvas to parent
+  // Handle internal updates from Excalidraw canvas to workspace state & IndexedDB
   const handleExcalidrawChange = useCallback(
     (elements: readonly any[], appState: any, files: any) => {
-      if (!excalidrawAPI) return;
-
       const nonDeletedElements = elements.filter((el) => !el.isDeleted);
+
       const dataToSave = {
         type: 'excalidraw',
         version: 2,
         source: 'https://excalidraw.com',
         elements: nonDeletedElements,
         appState: {
-          viewBackgroundColor: appState.viewBackgroundColor || (theme.isDark ? '#121212' : '#ffffff'),
-          gridSize: appState.gridSize || null,
+          viewBackgroundColor: appState?.viewBackgroundColor || (theme.isDark ? '#121212' : '#ffffff'),
+          gridSize: appState?.gridSize || null,
         },
         files: files || {},
       };
 
       const newJson = JSON.stringify(dataToSave, null, 2);
+      latestSceneDataRef.current = newJson;
 
-      // Only propagate if serialized JSON changed significantly
-      if (newJson !== lastSerializedJsonRef.current) {
-        lastSerializedJsonRef.current = newJson;
-        isInternalUpdateRef.current = true;
-        onUpdateContent(newJson);
+      // Only save if JSON actually changed
+      if (newJson !== lastSavedJsonRef.current) {
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+
+        // Debounce slightly (100ms) for high-frequency pointer moves
+        debounceTimerRef.current = setTimeout(() => {
+          lastSavedJsonRef.current = newJson;
+          isInternalUpdateRef.current = true;
+          onUpdateContentRef.current(fileIdRef.current, newJson);
+        }, 100);
       }
     },
-    [excalidrawAPI, onUpdateContent, theme.isDark]
+    [theme.isDark]
   );
+
+  // Clean unmount check to guarantee latest scene is persisted immediately if user switches tabs
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (latestSceneDataRef.current && latestSceneDataRef.current !== lastSavedJsonRef.current) {
+        onUpdateContentRef.current(fileIdRef.current, latestSceneDataRef.current);
+        lastSavedJsonRef.current = latestSceneDataRef.current;
+      }
+    };
+  }, []);
 
   // Export scene to PNG
   const handleExportPNG = async () => {
@@ -167,33 +202,19 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
     }
   };
 
-  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
-
-  // Clear Canvas to empty template
+  // Clear Canvas to empty
   const handleClearCanvas = () => {
     if (!excalidrawAPI) return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
     excalidrawAPI.resetScene();
     const emptyJson = JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2);
-    lastSerializedJsonRef.current = emptyJson;
-    onUpdateContent(emptyJson);
+    lastSavedJsonRef.current = emptyJson;
+    latestSceneDataRef.current = emptyJson;
+    isInternalUpdateRef.current = true;
+    onUpdateContentRef.current(fileIdRef.current, emptyJson);
     showToast('Canvas cleared');
-  };
-
-  // Load starter template
-  const handleLoadTemplate = (templateData: any, name: string) => {
-    if (!excalidrawAPI) return;
-    setShowTemplateMenu(false);
-    excalidrawAPI.updateScene({
-      elements: templateData.elements,
-      appState: {
-        viewBackgroundColor: theme.isDark ? '#1e1e1e' : '#ffffff',
-      },
-      commitToHistory: true,
-    });
-    const templateJson = JSON.stringify(templateData, null, 2);
-    lastSerializedJsonRef.current = templateJson;
-    onUpdateContent(templateJson);
-    showToast(`Loaded ${name}`);
   };
 
   return (
@@ -202,7 +223,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
       className="w-full h-full flex flex-col relative overflow-hidden select-none"
       style={{ backgroundColor: theme.ui.bgEditor }}
     >
-      {/* Excalidraw Custom Quick Action Bar */}
+      {/* Excalidraw Action Bar */}
       <div
         className="h-9 px-3 border-b flex items-center justify-between shrink-0 text-xs z-10"
         style={{
@@ -212,74 +233,29 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
         }}
       >
         <div className="flex items-center gap-2">
-          <span className="font-semibold flex items-center gap-1.5" style={{ color: theme.isDark ? '#a78bfa' : '#7c3aed' }}>
+          <span
+            className="font-semibold flex items-center gap-1.5"
+            style={{ color: theme.isDark ? '#a78bfa' : '#7c3aed' }}
+          >
             <Sparkles size={14} className="text-violet-500" />
             Excalidraw Canvas
           </span>
           <span className="opacity-40 text-[11px]">|</span>
-          <span className="opacity-80 text-[11px] truncate max-w-[160px] font-mono">{filename}</span>
+          <span className="opacity-80 text-[11px] truncate max-w-[200px] font-mono">{filename}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 relative">
-          {/* Load Sample Template Dropdown */}
-          <div className="relative">
-            <button
-              id="excalidraw-btn-sample"
-              onClick={() => setShowTemplateMenu(!showTemplateMenu)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-all shadow-xs border"
-              style={{
-                backgroundColor: theme.isDark ? '#2a2d32' : '#ffffff',
-                borderColor: theme.isDark ? '#3e4451' : '#cbd5e1',
-                color: theme.isDark ? '#f1f5f9' : '#1e293b',
-              }}
-              title="Load diagram sample templates"
-            >
-              <Sparkles size={12} className="text-amber-500" />
-              <span>Sample</span>
-              <ChevronDown size={11} className="opacity-70" />
-            </button>
-
-            {showTemplateMenu && (
-              <div
-                className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg border py-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100"
-                style={{
-                  backgroundColor: theme.ui.modalBg,
-                  borderColor: theme.ui.border,
-                  color: theme.ui.textMain,
-                }}
-              >
-                <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider opacity-60">
-                  Choose Template
-                </div>
-                <button
-                  onClick={() => handleLoadTemplate(DEFAULT_EXCALIDRAW_DATA, 'System Architecture')}
-                  className="w-full px-2.5 py-1.5 text-left flex items-center gap-2 hover:bg-violet-600 hover:text-white transition-colors"
-                >
-                  <span>🏗️</span>
-                  <span>System Architecture</span>
-                </button>
-                <button
-                  onClick={() => handleLoadTemplate(FLOWCHART_EXCALIDRAW_DATA, 'Process Flowchart')}
-                  className="w-full px-2.5 py-1.5 text-left flex items-center gap-2 hover:bg-violet-600 hover:text-white transition-colors"
-                >
-                  <span>🔀</span>
-                  <span>Process Flowchart</span>
-                </button>
-              </div>
-            )}
-          </div>
-
+        <div className="flex items-center gap-1.5">
           {/* Clear Canvas */}
           <button
             id="excalidraw-btn-clear"
             onClick={handleClearCanvas}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-all shadow-xs border hover:text-red-500"
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium transition-all shadow-2xs border hover:text-red-500 hover:border-red-400"
             style={{
               backgroundColor: theme.isDark ? '#2a2d32' : '#ffffff',
               borderColor: theme.isDark ? '#3e4451' : '#cbd5e1',
               color: theme.isDark ? '#f1f5f9' : '#1e293b',
             }}
-            title="Reset and clear canvas"
+            title="Reset and clear canvas to blank"
           >
             <RefreshCw size={11} className="text-red-500" />
             <span>Clear</span>
@@ -290,7 +266,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
             id="excalidraw-btn-export-png"
             onClick={handleExportPNG}
             disabled={exporting}
-            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-xs disabled:opacity-50"
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-2xs disabled:opacity-50"
             title="Export diagram as PNG image"
           >
             <ImageIcon size={12} />
@@ -302,7 +278,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
             id="excalidraw-btn-export-svg"
             onClick={handleExportSVG}
             disabled={exporting}
-            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs disabled:opacity-50"
+            className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-2xs disabled:opacity-50"
             title="Export diagram as vector SVG"
           >
             <Download size={12} />
@@ -315,7 +291,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
       <div className="flex-1 w-full h-[calc(100%-36px)] relative">
         <Excalidraw
           excalidrawAPI={(api) => setExcalidrawAPI(api)}
-          initialData={initialDataRef.current}
+          initialData={initialData}
           onChange={handleExcalidrawChange}
           theme={theme.isDark ? 'dark' : 'light'}
           UIOptions={{

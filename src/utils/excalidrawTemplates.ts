@@ -465,7 +465,17 @@ export const FLOWCHART_EXCALIDRAW_DATA = {
 
 export function parseExcalidrawContent(rawText: string): any {
   if (!rawText || !rawText.trim()) {
-    return DEFAULT_EXCALIDRAW_DATA;
+    return {
+      type: 'excalidraw',
+      version: 2,
+      source: 'https://excalidraw.com',
+      elements: [],
+      appState: {
+        viewBackgroundColor: '#ffffff',
+        gridSize: null,
+      },
+      files: {},
+    };
   }
   try {
     const parsed = JSON.parse(rawText);
@@ -484,7 +494,17 @@ export function parseExcalidrawContent(rawText: string): any {
       };
     }
   } catch {
-    // If invalid JSON, return default
+    // If invalid JSON, return empty diagram
   }
-  return DEFAULT_EXCALIDRAW_DATA;
+  return {
+    type: 'excalidraw',
+    version: 2,
+    source: 'https://excalidraw.com',
+    elements: [],
+    appState: {
+      viewBackgroundColor: '#ffffff',
+      gridSize: null,
+    },
+    files: {},
+  };
 }
