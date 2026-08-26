@@ -378,6 +378,7 @@ LIMIT 10;
 `;
 
   const now = Date.now();
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
   const files: Record<string, FileNode> = {
     'welcome_file': {
@@ -387,8 +388,8 @@ LIMIT 10;
       parentId: null,
       content: welcomeContent,
       size: calculateStringSizeBytes(welcomeContent),
-      createdAt: now - 3600000,
-      updatedAt: now,
+      createdAt: now - 2 * 3600000, // Today, 2 hrs ago
+      updatedAt: now - 15 * 60000,   // Today, 15 mins ago
     },
     [rootNotesId]: {
       id: rootNotesId,
@@ -396,8 +397,8 @@ LIMIT 10;
       type: 'folder',
       parentId: null,
       size: 0,
-      createdAt: now - 3000000,
-      updatedAt: now - 3000000,
+      createdAt: now - 14 * ONE_DAY_MS,
+      updatedAt: now - 1 * ONE_DAY_MS,
       isExpanded: true,
     },
     'file_meeting_notes': {
@@ -407,8 +408,8 @@ LIMIT 10;
       parentId: rootNotesId,
       content: meetingNotesContent,
       size: calculateStringSizeBytes(meetingNotesContent),
-      createdAt: now - 2500000,
-      updatedAt: now - 1000000,
+      createdAt: now - 2 * ONE_DAY_MS - 2 * 3600000, // Created 2 days ago
+      updatedAt: now - 1 * ONE_DAY_MS - 3 * 3600000, // Updated Yesterday
     },
     [rootSnippetsId]: {
       id: rootSnippetsId,
@@ -416,8 +417,8 @@ LIMIT 10;
       type: 'folder',
       parentId: null,
       size: 0,
-      createdAt: now - 2000000,
-      updatedAt: now - 2000000,
+      createdAt: now - 14 * ONE_DAY_MS,
+      updatedAt: now - 3 * ONE_DAY_MS,
       isExpanded: true,
     },
     'file_python_algo': {
@@ -427,8 +428,8 @@ LIMIT 10;
       parentId: rootSnippetsId,
       content: pythonSnippet,
       size: calculateStringSizeBytes(pythonSnippet),
-      createdAt: now - 1800000,
-      updatedAt: now - 500000,
+      createdAt: now - 5 * ONE_DAY_MS - 3600000,     // Created 5 days ago
+      updatedAt: now - 3 * ONE_DAY_MS - 6 * 3600000, // Updated 3 days ago
     },
     'file_html_preview': {
       id: 'file_html_preview',
@@ -437,8 +438,8 @@ LIMIT 10;
       parentId: rootSnippetsId,
       content: htmlSnippet,
       size: calculateStringSizeBytes(htmlSnippet),
-      createdAt: now - 1700000,
-      updatedAt: now - 400000,
+      createdAt: now - 4 * ONE_DAY_MS - 5 * 3600000, // Created 4 days ago
+      updatedAt: now - 2 * ONE_DAY_MS - 4 * 3600000, // Updated 2 days ago
     },
     'file_styles': {
       id: 'file_styles',
@@ -447,8 +448,8 @@ LIMIT 10;
       parentId: rootSnippetsId,
       content: cssSnippet,
       size: calculateStringSizeBytes(cssSnippet),
-      createdAt: now - 1600000,
-      updatedAt: now - 300000,
+      createdAt: now - 7 * ONE_DAY_MS - 3 * 3600000, // Created 7 days ago
+      updatedAt: now - 5 * ONE_DAY_MS - 2 * 3600000, // Updated 5 days ago
     },
     [rootDataId]: {
       id: rootDataId,
@@ -456,8 +457,8 @@ LIMIT 10;
       type: 'folder',
       parentId: null,
       size: 0,
-      createdAt: now - 1500000,
-      updatedAt: now - 1500000,
+      createdAt: now - 14 * ONE_DAY_MS,
+      updatedAt: now - 8 * ONE_DAY_MS,
       isExpanded: false,
     },
     'file_config_json': {
@@ -467,8 +468,8 @@ LIMIT 10;
       parentId: rootDataId,
       content: jsonSnippet,
       size: calculateStringSizeBytes(jsonSnippet),
-      createdAt: now - 1400000,
-      updatedAt: now - 200000,
+      createdAt: now - 10 * ONE_DAY_MS - 4 * 3600000, // Created 10 days ago
+      updatedAt: now - 8 * ONE_DAY_MS - 3600000,      // Updated 8 days ago
     },
     'file_query_sql': {
       id: 'file_query_sql',
@@ -477,8 +478,8 @@ LIMIT 10;
       parentId: rootDataId,
       content: sqlSnippet,
       size: calculateStringSizeBytes(sqlSnippet),
-      createdAt: now - 1300000,
-      updatedAt: now - 100000,
+      createdAt: now - 14 * ONE_DAY_MS - 5 * 3600000, // Created 14 days ago
+      updatedAt: now - 12 * ONE_DAY_MS - 3 * 3600000, // Updated 12 days ago
     },
     'file_architecture_diagram': {
       id: 'file_architecture_diagram',
@@ -487,8 +488,8 @@ LIMIT 10;
       parentId: rootNotesId,
       content: JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2),
       size: calculateStringSizeBytes(JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2)),
-      createdAt: now - 1200000,
-      updatedAt: now - 50000,
+      createdAt: now - 6 * 3600000, // Today, 6 hrs ago
+      updatedAt: now - 45 * 60000,  // Today, 45 mins ago
     },
   };
 

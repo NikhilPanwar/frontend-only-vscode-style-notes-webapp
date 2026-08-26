@@ -326,15 +326,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </button>
 
           <button
+            id="settings-btn-reset-workspace"
             onClick={onResetWorkspace}
-            className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded border transition-colors text-[11px] font-medium"
+            className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded border transition-colors text-[11px] font-semibold hover:border-red-500 hover:text-red-600 dark:hover:text-red-400 shadow-2xs"
             style={{
-              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff',
               borderColor: theme.ui.border,
-              color: theme.ui.textMuted,
+              color: theme.isDark ? '#e4e4e7' : '#374151',
             }}
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={13} className="text-red-500 shrink-0" />
             <span>Reset to Default Samples</span>
           </button>
         </div>

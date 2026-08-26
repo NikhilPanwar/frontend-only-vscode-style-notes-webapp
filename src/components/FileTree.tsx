@@ -16,6 +16,8 @@ import {
   ArrowUpRight,
   Check,
   PenTool,
+  FolderTree,
+  Calendar,
 } from 'lucide-react';
 import { FileNode, ThemeType } from '../types';
 import { FileIconComponent } from '../utils/fileIcons';
@@ -28,6 +30,7 @@ import {
   isNameTakenInFolder,
   ensureFileExtension,
 } from '../utils/storage';
+import { DateView } from './DateView';
 
 export interface TreeClipboardState {
   action: 'copy' | 'cut';
@@ -75,6 +78,22 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
   // Selected item in filepane
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(activeFileId);
+
+  // View Mode: 'tree' (Folder tree view - default) or 'date' (Date view)
+  const [explorerViewMode, setExplorerViewMode] = useState<'tree' | 'date'>(() => {
+    try {
+      return (localStorage.getItem('vscode_notes_explorer_view') as 'tree' | 'date') || 'tree';
+    } catch {
+      return 'tree';
+    }
+  });
+
+  const handleViewModeChange = (mode: 'tree' | 'date') => {
+    setExplorerViewMode(mode);
+    try {
+      localStorage.setItem('vscode_notes_explorer_view', mode);
+    } catch {}
+  };
 
   // Internal cut/copy clipboard state
   const [clipboard, setClipboard] = useState<TreeClipboardState | null>(null);
@@ -764,29 +783,83 @@ export const FileTree: React.FC<FileTreeProps> = ({
           >
             <PenTool size={14} />
           </button>
+          {explorerViewMode === 'tree' && (
+            <>
+              <button
+                id="explorer-btn-new-folder"
+                onClick={() => handleStartCreate('folder', null)}
+                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                title="New Folder in Root"
+              >
+                <FolderPlus size={14} />
+              </button>
+              <button
+                id="explorer-btn-upload"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                title="Upload Files or Images"
+              >
+                <ImagePlus size={14} />
+              </button>
+              <button
+                id="explorer-btn-collapse-all"
+                onClick={onCollapseAll}
+                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                title="Collapse All Folders"
+              >
+                <FolderMinus size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Explorer Mode Switcher: Tree View vs Date View */}
+      <div
+        className="px-2.5 py-1.5 border-b shrink-0"
+        style={{
+          borderColor: theme.ui.border,
+          backgroundColor: theme.isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.02)',
+        }}
+      >
+        <div
+          className="flex items-center w-full rounded p-0.5 border"
+          style={{
+            backgroundColor: theme.isDark ? 'rgba(0,0,0,0.4)' : '#e5e7eb',
+            borderColor: theme.ui.border,
+          }}
+        >
           <button
-            id="explorer-btn-new-folder"
-            onClick={() => handleStartCreate('folder', null)}
-            className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            title="New Folder in Root"
+            id="explorer-tab-tree-view"
+            onClick={() => handleViewModeChange('tree')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-semibold transition-all ${
+              explorerViewMode === 'tree'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'hover:opacity-100 opacity-80'
+            }`}
+            style={{
+              color: explorerViewMode === 'tree' ? '#ffffff' : theme.isDark ? '#d4d4d8' : '#1f2937',
+            }}
+            title="Folder Tree View (Default structure)"
           >
-            <FolderPlus size={14} />
+            <FolderTree size={12} />
+            <span>Folder Tree</span>
           </button>
           <button
-            id="explorer-btn-upload"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            title="Upload Files or Images"
+            id="explorer-tab-date-view"
+            onClick={() => handleViewModeChange('date')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2 rounded text-[11px] font-semibold transition-all ${
+              explorerViewMode === 'date'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'hover:opacity-100 opacity-80'
+            }`}
+            style={{
+              color: explorerViewMode === 'date' ? '#ffffff' : theme.isDark ? '#d4d4d8' : '#1f2937',
+            }}
+            title="Date View (Files grouped by 22 Aug, 21 Aug, etc.)"
           >
-            <ImagePlus size={14} />
-          </button>
-          <button
-            id="explorer-btn-collapse-all"
-            onClick={onCollapseAll}
-            className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            title="Collapse All Folders"
-          >
-            <FolderMinus size={14} />
+            <Calendar size={12} />
+            <span>Date View</span>
           </button>
         </div>
       </div>
@@ -805,37 +878,61 @@ export const FileTree: React.FC<FileTreeProps> = ({
         }}
       />
 
-      {/* Main Tree List */}
-      <div
-        className="flex-1 overflow-y-auto py-1 scrollbar-thin flex flex-col"
-        onDragOver={handleDragOverRoot}
-        onDrop={handleDropOnRoot}
-      >
-        {renderTree(null, 0)}
+      {/* Main View: Either Folder Tree or Date Timeline View */}
+      {explorerViewMode === 'tree' ? (
+        <>
+          {/* Main Tree List */}
+          <div
+            className="flex-1 overflow-y-auto py-1 scrollbar-thin flex flex-col"
+            onDragOver={handleDragOverRoot}
+            onDrop={handleDropOnRoot}
+          >
+            {renderTree(null, 0)}
 
-        {/* Empty Root Drop Area */}
-        <div
-          onDragOver={handleDragOverRoot}
-          onDrop={handleDropOnRoot}
-          onClick={() => setSelectedNodeId(null)}
-          className={`flex-1 min-h-[60px] m-1 rounded transition-colors flex items-center justify-center text-[11px] ${
-            dragOverTargetId === 'root'
-              ? 'border-2 border-dashed border-blue-500 bg-blue-500/10 text-blue-300 font-medium'
-              : 'border border-transparent'
-          }`}
-        >
-          {dragOverTargetId === 'root' && <span>Drop to move to Root Workspace</span>}
-        </div>
-      </div>
+            {/* Empty Root Drop Area */}
+            <div
+              onDragOver={handleDragOverRoot}
+              onDrop={handleDropOnRoot}
+              onClick={() => setSelectedNodeId(null)}
+              className={`flex-1 min-h-[60px] m-1 rounded transition-colors flex items-center justify-center text-[11px] ${
+                dragOverTargetId === 'root'
+                  ? 'border-2 border-dashed border-blue-500 bg-blue-500/10 text-blue-300 font-medium'
+                  : 'border border-transparent'
+              }`}
+            >
+              {dragOverTargetId === 'root' && <span>Drop to move to Root Workspace</span>}
+            </div>
+          </div>
 
-      {/* Footer shortcut tips */}
-      <div
-        className="px-3 py-1.5 border-t text-[10px] text-neutral-500 flex items-center justify-between shrink-0"
-        style={{ borderColor: theme.ui.border }}
-      >
-        <span className="truncate">Drag & drop to move files</span>
-        <span className="font-mono text-[9px] text-neutral-400">Ctrl+C / Ctrl+V</span>
-      </div>
+          {/* Footer shortcut tips */}
+          <div
+            className="px-3 py-1.5 border-t text-[10px] text-neutral-500 flex items-center justify-between shrink-0"
+            style={{ borderColor: theme.ui.border }}
+          >
+            <span className="truncate">Drag & drop to move files</span>
+            <span className="font-mono text-[9px] text-neutral-400">Ctrl+C / Ctrl+V</span>
+          </div>
+        </>
+      ) : (
+        <DateView
+          files={files}
+          activeFileId={activeFileId}
+          currentTheme={currentTheme}
+          clipboard={clipboard}
+          onOpenFile={onOpenFile}
+          onRenameNode={onRenameNode}
+          onDeleteNode={onDeleteNode}
+          onDuplicateFile={onDuplicateFile}
+          onCut={handleCut}
+          onCopy={handleCopy}
+          onStartCreateFile={(parentId) => handleStartCreate('file', parentId)}
+          onStartCreateDiagram={(parentId) => {
+            setCreatingType('file');
+            setCreatingParentId(parentId);
+            setCreatingName('diagram.excalidraw');
+          }}
+        />
+      )}
 
       {/* Context Menu Popup */}
       {contextMenu && (

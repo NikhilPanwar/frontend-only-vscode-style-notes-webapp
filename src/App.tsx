@@ -39,6 +39,7 @@ import { CommandPaletteModal, CommandItem } from './components/CommandPaletteMod
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
 import { ImageUploadModal } from './components/ImageUploadModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { ResetConfirmModal } from './components/ResetConfirmModal';
 import {
   FilePlus,
   FolderPlus,
@@ -120,6 +121,7 @@ export default function App() {
   const [isLanguageSelectorOpen, setIsLanguageSelectorOpen] = useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [deleteConfirmNode, setDeleteConfirmNode] = useState<FileNode | null>(null);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
   // Load Workspace from IndexedDB on initial mount
   useEffect(() => {
@@ -801,12 +803,15 @@ export default function App() {
     }
   }, [workspace]);
 
-  const handleResetWorkspace = useCallback(async () => {
-    if (confirm('Are you sure you want to reset your workspace to default sample notes? Any custom notes will be replaced.')) {
-      const defaultWs = createDefaultWorkspace();
-      setWorkspace(defaultWs);
-      await saveWorkspace(defaultWs);
-    }
+  const handleResetWorkspace = useCallback(() => {
+    setIsResetConfirmOpen(true);
+  }, []);
+
+  const confirmResetWorkspace = useCallback(async () => {
+    const defaultWs = createDefaultWorkspace();
+    setWorkspace(defaultWs);
+    await saveWorkspace(defaultWs);
+    setIsResetConfirmOpen(false);
   }, []);
 
   const handleInsertImageMarkdown = useCallback(
@@ -1323,6 +1328,14 @@ export default function App() {
         onConfirm={confirmDeleteNode}
         targetNode={deleteConfirmNode}
         currentTheme={currentTheme}
+      />
+
+      <ResetConfirmModal
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        onConfirm={confirmResetWorkspace}
+        currentTheme={currentTheme}
+        totalNotes={totalNotes}
       />
     </div>
   );
