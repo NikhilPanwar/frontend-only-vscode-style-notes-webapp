@@ -533,10 +533,14 @@ export const DateView: React.FC<DateViewProps> = ({
                               fileId: file.id,
                             });
                           }}
-                          className={`group flex items-center justify-between py-1.5 px-3.5 text-xs rounded-sm cursor-pointer transition-all ${
-                            isCut ? 'opacity-40 border border-dashed border-neutral-500' : ''
+                          className={`group flex items-center justify-between h-[38px] min-h-[38px] max-h-[38px] px-3.5 text-xs rounded-sm cursor-pointer transition-colors overflow-hidden box-border border ${
+                            isCut
+                              ? 'opacity-40 border-dashed border-neutral-500'
+                              : 'border-transparent'
                           } ${
-                            isSelected || isActive ? 'font-medium' : ''
+                            isSelected || isActive
+                              ? 'font-medium'
+                              : 'hover:bg-black/5 dark:hover:bg-white/5'
                           }`}
                           style={{
                             backgroundColor:
@@ -551,8 +555,10 @@ export const DateView: React.FC<DateViewProps> = ({
                           title={`Last modified: ${formatFullDate(file.updatedAt || file.createdAt)}\nPath: ${getFilePath(file.id, files)}`}
                         >
                           {/* File Left details */}
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <FileIconComponent filename={file.name} isFolder={false} size={14} />
+                          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                            <span className="shrink-0 flex items-center">
+                              <FileIconComponent filename={file.name} isFolder={false} size={14} />
+                            </span>
 
                             {isRenaming ? (
                               <input
@@ -566,7 +572,7 @@ export const DateView: React.FC<DateViewProps> = ({
                                 }}
                                 onBlur={handleFinishRename}
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex-1 border border-blue-500 rounded px-1 outline-none text-xs"
+                                className="flex-1 border border-blue-500 rounded px-1 outline-none text-xs leading-none h-6"
                                 style={{
                                   backgroundColor: theme.ui.inputBg,
                                   color: theme.ui.textMain,
@@ -574,27 +580,27 @@ export const DateView: React.FC<DateViewProps> = ({
                                 autoFocus
                               />
                             ) : (
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <span className="truncate text-xs leading-snug font-normal">{file.name}</span>
+                              <div className="flex flex-col min-w-0 flex-1 justify-center overflow-hidden">
+                                <span className="truncate text-xs leading-tight font-normal">{file.name}</span>
                                 <div
-                                  className="flex items-center gap-1.5 text-[10px] leading-none mt-0.5"
+                                  className="flex items-center gap-1.5 text-[10px] leading-tight mt-0.5 truncate whitespace-nowrap min-w-0"
                                   style={{ color: theme.isDark ? '#a1a1aa' : '#6b7280' }}
                                 >
-                                  <span className="flex items-center gap-0.5">
+                                  <span className="flex items-center gap-0.5 shrink-0">
                                     <Clock size={9} />
                                     {formatTime(fileTs)}
                                   </span>
                                   {parentFolderName && (
                                     <>
-                                      <span>•</span>
-                                      <span className="truncate flex items-center gap-0.5">
-                                        <Folder size={9} />
-                                        {parentFolderName}/
+                                      <span className="shrink-0">•</span>
+                                      <span className="truncate flex items-center gap-0.5 min-w-0">
+                                        <Folder size={9} className="shrink-0" />
+                                        <span className="truncate">{parentFolderName}/</span>
                                       </span>
                                     </>
                                   )}
-                                  <span>•</span>
-                                  <span>{formatBytes(file.size || 0)}</span>
+                                  <span className="shrink-0">•</span>
+                                  <span className="shrink-0">{formatBytes(file.size || 0)}</span>
                                 </div>
                               </div>
                             )}
@@ -603,7 +609,7 @@ export const DateView: React.FC<DateViewProps> = ({
                           {/* Quick action buttons on hover */}
                           {!isRenaming && (
                             <div
-                              className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1.5"
+                              className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1.5 h-6"
                               style={{ color: theme.isDark ? '#e4e4e7' : '#374151' }}
                             >
                               <button
@@ -611,7 +617,7 @@ export const DateView: React.FC<DateViewProps> = ({
                                   e.stopPropagation();
                                   onCut(file.id);
                                 }}
-                                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                className="w-5 h-5 flex items-center justify-center p-0 hover:text-blue-500 rounded hover:bg-black/10 dark:hover:bg-white/15 transition-colors leading-none shrink-0"
                                 title="Cut (Ctrl+X)"
                               >
                                 <Scissors size={11} />
@@ -622,7 +628,7 @@ export const DateView: React.FC<DateViewProps> = ({
                                   e.stopPropagation();
                                   onCopy(file.id);
                                 }}
-                                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                className="w-5 h-5 flex items-center justify-center p-0 hover:text-blue-500 rounded hover:bg-black/10 dark:hover:bg-white/15 transition-colors leading-none shrink-0"
                                 title="Copy (Ctrl+C)"
                               >
                                 <Copy size={11} />
@@ -633,7 +639,7 @@ export const DateView: React.FC<DateViewProps> = ({
                                   e.stopPropagation();
                                   handleStartRename(file);
                                 }}
-                                className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                className="w-5 h-5 flex items-center justify-center p-0 hover:text-blue-500 rounded hover:bg-black/10 dark:hover:bg-white/15 transition-colors leading-none shrink-0"
                                 title="Rename (F2)"
                               >
                                 <Edit2 size={11} />
@@ -644,7 +650,7 @@ export const DateView: React.FC<DateViewProps> = ({
                                   e.stopPropagation();
                                   onDeleteNode(file.id);
                                 }}
-                                className="p-1 hover:text-red-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                                className="w-5 h-5 flex items-center justify-center p-0 hover:text-red-500 rounded hover:bg-black/10 dark:hover:bg-white/15 transition-colors leading-none shrink-0"
                                 title="Delete"
                               >
                                 <Trash2 size={11} />
