@@ -2,9 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import { FileNode, EditorSettings, ThemeType, CursorPosition, MAX_NOTE_SIZE_BYTES } from '../types';
 import { THEMES, registerMonacoThemes } from '../utils/themes';
-import { detectLanguageByFilename, isImageFile, isMarkdownFile, isHtmlFile } from '../utils/languageDetector';
+import { detectLanguageByFilename, isImageFile, isMarkdownFile, isHtmlFile, isExcalidrawFile } from '../utils/languageDetector';
 import { MarkdownPreview } from './MarkdownPreview';
 import { HtmlPreview } from './HtmlPreview';
+import { ExcalidrawEditor } from './ExcalidrawEditor';
 import { ImageViewer } from './ImageViewer';
 import { EmptyEditorState } from './EmptyEditorState';
 import { formatBytes, calculateStringSizeBytes } from '../utils/storage';
@@ -198,11 +199,13 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const langInfo = detectLanguageByFilename(activeFile.name);
   const isMd = isMarkdownFile(activeFile.name);
   const isHtml = isHtmlFile(activeFile.name);
+  const isExcalidraw = isExcalidrawFile(activeFile.name);
+  const supportsPreview = isMd || isHtml || isExcalidraw;
   const previewMode = settings.previewMode;
 
   // Determine what to render based on preview mode
-  const showEditor = previewMode === 'editor' || previewMode === 'split' || (!isMd && !isHtml);
-  const showPreview = (isMd || isHtml) && (previewMode === 'preview' || previewMode === 'split');
+  const showEditor = previewMode === 'editor' || previewMode === 'split' || !supportsPreview;
+  const showPreview = supportsPreview && (previewMode === 'preview' || previewMode === 'split');
 
   return (
     <div
@@ -286,7 +289,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           </div>
         )}
 
-        {/* Live Preview Pane (Markdown or HTML) */}
+        {/* Live Preview Pane (Markdown, HTML, or Excalidraw) */}
         {showPreview && (
           <div className="h-full flex-1 overflow-hidden">
             {isMd && (
@@ -301,6 +304,14 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
               <HtmlPreview
                 htmlContent={localContent}
                 currentTheme={currentTheme}
+              />
+            )}
+            {isExcalidraw && (
+              <ExcalidrawEditor
+                content={localContent}
+                filename={activeFile.name}
+                currentTheme={currentTheme}
+                onUpdateContent={(newContent) => handleEditorChange(newContent)}
               />
             )}
           </div>

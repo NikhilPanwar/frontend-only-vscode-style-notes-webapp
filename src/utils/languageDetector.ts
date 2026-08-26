@@ -31,6 +31,7 @@ export const SUPPORTED_LANGUAGES: LanguageInfo[] = [
   { id: 'lua', name: 'Lua', extensions: ['lua'], monacoLanguage: 'lua' },
   { id: 'dockerfile', name: 'Dockerfile', extensions: ['dockerfile'], monacoLanguage: 'dockerfile' },
   { id: 'ini', name: 'INI / Config', extensions: ['ini', 'conf', 'env'], monacoLanguage: 'ini' },
+  { id: 'excalidraw', name: 'Excalidraw Diagram', extensions: ['excalidraw'], monacoLanguage: 'json' },
   { id: 'plaintext', name: 'Plain Text', extensions: ['txt', 'log', 'text'], monacoLanguage: 'plaintext' },
 ];
 
@@ -76,3 +77,9 @@ export function isHtmlFile(filename: string): boolean {
   const ext = getFileExtension(filename);
   return ['html', 'htm'].includes(ext);
 }
+
+export function isExcalidrawFile(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return lower.endsWith('.excalidraw') || lower.endsWith('.excalidraw.json') || lower.endsWith('.excalidraw.svg') || lower.endsWith('.excalidraw.png');
+}
+

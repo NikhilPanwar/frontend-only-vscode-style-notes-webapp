@@ -14,8 +14,9 @@ import {
   Database,
   Globe,
   FileType as FileTypeIcon,
+  PenTool,
 } from 'lucide-react';
-import { getFileExtension, isImageFile } from './languageDetector';
+import { getFileExtension, isImageFile, isExcalidrawFile } from './languageDetector';
 
 export interface FileIconProps {
   filename?: string;
@@ -43,6 +44,11 @@ export const FileIconComponent: React.FC<FileIconProps> = ({
   if (isImageFile(filename)) {
     return <FileImage size={size} className={`text-purple-400 shrink-0 ${className}`} />;
   }
+
+  if (isExcalidrawFile(filename)) {
+    return <PenTool size={size} className={`text-violet-400 shrink-0 ${className}`} />;
+  }
+
 
   const ext = getFileExtension(filename);
 

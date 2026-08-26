@@ -26,7 +26,8 @@ import {
 } from './utils/storage';
 import { TreeClipboardState } from './components/FileTree';
 import { THEMES } from './utils/themes';
-import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile } from './utils/languageDetector';
+import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile } from './utils/languageDetector';
+import { DEFAULT_EXCALIDRAW_DATA } from './utils/excalidrawTemplates';
 import { TitleBar } from './components/TitleBar';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
@@ -41,6 +42,7 @@ import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import {
   FilePlus,
   FolderPlus,
+  PenTool,
   WrapText,
   Palette,
   Download,
@@ -82,7 +84,7 @@ export default function App() {
           tabSize: 2,
           minimap: false,
           lineNumbers: 'on',
-          previewMode: 'split',
+          previewMode: 'editor',
           autoSaveDelay: 300,
           maxOpenTabs: 10,
           ...parsed,
@@ -96,7 +98,7 @@ export default function App() {
       tabSize: 2,
       minimap: false,
       lineNumbers: 'on',
-      previewMode: 'split',
+      previewMode: 'editor',
       autoSaveDelay: 300,
       maxOpenTabs: 10,
     };
@@ -124,6 +126,10 @@ export default function App() {
     async function init() {
       const ws = await loadWorkspace();
       setWorkspace(ws);
+      if (ws.activeTabId && ws.files[ws.activeTabId]) {
+        const isExcal = isExcalidrawFile(ws.files[ws.activeTabId].name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      }
     }
     init();
   }, []);
@@ -216,8 +222,19 @@ export default function App() {
     if (!workspace) return;
     const maxTabs = settings.maxOpenTabs || 10;
 
+    const targetNode = workspace.files[fileId];
+    if (targetNode) {
+      const isExcal = isExcalidrawFile(targetNode.name);
+      setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+    }
+
     setWorkspace((prev) => {
       if (!prev) return prev;
+      const fileToOpen = prev.files[fileId];
+      if (fileToOpen) {
+        const isExcal = isExcalidrawFile(fileToOpen.name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      }
       const alreadyOpen = prev.openTabIds.includes(fileId);
       let newTabs = alreadyOpen ? prev.openTabIds : [...prev.openTabIds, fileId];
       if (newTabs.length > maxTabs) {
@@ -255,6 +272,11 @@ export default function App() {
         }
       }
 
+      if (newActiveId && prev.files[newActiveId]) {
+        const isExcal = isExcalidrawFile(prev.files[newActiveId].name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      }
+
       return {
         ...prev,
         openTabIds: newTabs,
@@ -267,6 +289,11 @@ export default function App() {
   const handleCloseOtherTabs = useCallback((targetTabId: string) => {
     setWorkspace((prev) => {
       if (!prev) return prev;
+      const target = prev.files[targetTabId];
+      if (target) {
+        const isExcal = isExcalidrawFile(target.name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      }
       return {
         ...prev,
         openTabIds: [targetTabId],
@@ -285,6 +312,10 @@ export default function App() {
       let newActive = prev.activeTabId;
       if (newActive && !newTabs.includes(newActive)) {
         newActive = targetTabId;
+      }
+      if (newActive && prev.files[newActive]) {
+        const isExcal = isExcalidrawFile(prev.files[newActive].name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
       }
       return {
         ...prev,
@@ -315,18 +346,29 @@ export default function App() {
     const maxTabs = settings.maxOpenTabs || 10;
     const now = Date.now();
 
+    const isExcalInitial = isExcalidrawFile(cleanName);
+    setSettings((s) => ({ ...s, previewMode: isExcalInitial ? 'preview' : 'editor' }));
+
     setWorkspace((prev) => {
       if (!prev) return prev;
       const uniqueName = getUniqueNameInFolder(cleanName, parentId, prev.files);
       const id = generateId();
-      const size = calculateStringSizeBytes(content);
+
+      const isExcal = isExcalidrawFile(uniqueName);
+      setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+
+      const finalContent =
+        !content && isExcal
+          ? JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2)
+          : content;
+      const size = calculateStringSizeBytes(finalContent);
 
       const newFile: FileNode = {
         id,
         name: uniqueName,
         type: 'file',
         parentId,
-        content,
+        content: finalContent,
         size,
         createdAt: now,
         updatedAt: now,
@@ -448,6 +490,11 @@ export default function App() {
         newActiveTabId = newOpenTabs.length > 0 ? newOpenTabs[0] : null;
       }
 
+      if (newActiveTabId && newFiles[newActiveTabId]) {
+        const isExcal = isExcalidrawFile(newFiles[newActiveTabId].name);
+        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      }
+
       return {
         ...prev,
         files: newFiles,
@@ -553,6 +600,12 @@ export default function App() {
         });
 
         const activeId = newNodes[newNodes.length - 1].id;
+        const activeNode = newFiles[activeId];
+        if (activeNode) {
+          const isExcal = isExcalidrawFile(activeNode.name);
+          setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        }
+
         if (newOpenTabs.length > maxTabs) {
           newOpenTabs = enforceTabLimit(newOpenTabs, activeId, maxTabs);
         }
@@ -908,6 +961,13 @@ export default function App() {
         icon: <FilePlus size={14} />,
         shortcut: 'Ctrl+N',
         action: () => handleCreateFile('untitled.txt', null),
+      },
+      {
+        id: 'cmd-new-diagram',
+        label: 'File: New Excalidraw Diagram',
+        category: 'File',
+        icon: <PenTool size={14} className="text-violet-400" />,
+        action: () => handleCreateFile('diagram.excalidraw', null),
       },
       {
         id: 'cmd-new-folder',

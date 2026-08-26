@@ -1,6 +1,6 @@
 {
   "name": "VS Code Notes",
-  "description": "An offline-first VS Code-styled notes workspace with tree view, syntax highlighting, search, tabs, HTML and Markdown previews, and theme support.",
+  "description": "An offline-first VS Code-styled notes workspace with tree view, syntax highlighting, search, tabs, HTML/Markdown previews, Excalidraw visual diagram editor, and theme support.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

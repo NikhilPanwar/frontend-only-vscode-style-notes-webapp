@@ -15,6 +15,7 @@ import {
   ImagePlus,
   ArrowUpRight,
   Check,
+  PenTool,
 } from 'lucide-react';
 import { FileNode, ThemeType } from '../types';
 import { FileIconComponent } from '../utils/fileIcons';
@@ -752,6 +753,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
             <FilePlus size={14} />
           </button>
           <button
+            id="explorer-btn-new-diagram"
+            onClick={() => {
+              setCreatingType('file');
+              setCreatingParentId(null);
+              setCreatingName('diagram.excalidraw');
+            }}
+            className="p-1 hover:text-violet-400 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            title="New Excalidraw Diagram"
+          >
+            <PenTool size={14} />
+          </button>
+          <button
             id="explorer-btn-new-folder"
             onClick={() => handleStartCreate('folder', null)}
             className="p-1 hover:text-blue-500 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -850,6 +863,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
               >
                 <FilePlus size={13} />
                 <span>New File inside</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCreatingType('file');
+                  setCreatingParentId(contextMenu.nodeId);
+                  setCreatingName('diagram.excalidraw');
+                  setContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-left hover:bg-blue-600 hover:text-white transition-colors"
+              >
+                <PenTool size={13} className="text-violet-400" />
+                <span>New Excalidraw Diagram</span>
               </button>
               <button
                 onClick={() => {
@@ -1015,6 +1040,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
               >
                 <FilePlus size={13} />
                 <span>New File in Root</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCreatingType('file');
+                  setCreatingParentId(null);
+                  setCreatingName('diagram.excalidraw');
+                  setContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-left hover:bg-blue-600 hover:text-white transition-colors"
+              >
+                <PenTool size={13} className="text-violet-400" />
+                <span>New Excalidraw Diagram in Root</span>
               </button>
               <button
                 onClick={() => {

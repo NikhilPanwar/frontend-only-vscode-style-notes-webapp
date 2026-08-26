@@ -1,6 +1,7 @@
 import { get, set } from 'idb-keyval';
 import JSZip from 'jszip';
 import { FileNode, Workspace, MAX_NOTE_SIZE_BYTES } from '../types';
+import { DEFAULT_EXCALIDRAW_DATA } from './excalidrawTemplates';
 
 const STORAGE_KEY = 'vscode_notes_workspace_v1';
 const SETTINGS_KEY = 'vscode_notes_settings_v1';
@@ -178,6 +179,7 @@ An offline-first, browser-persisted code & notes workspace inspired by Visual St
 - **Any File Extension**: Markdown (\`.md\`), Python (\`.py\`), HTML (\`.html\`), TypeScript (\`.ts\`), JSON (\`.json\`), SQL (\`.sql\`), CSS (\`.css\`), and more.
 - **Full Syntax Highlighting & Monaco Editor**: Word wrap, multi-cursor, minimap, line numbers, automatic bracket pairing.
 - **Live Previews**:
+  - **Excalidraw Diagrams (\`.excalidraw\`)**: Interactive vector whiteboard, architecture diagrams, and flowcharts with PNG/SVG export!
   - **Markdown**: GitHub-flavored markdown, math, tables, code blocks, task lists.
   - **HTML**: Live sandboxed iframe preview with hot reload as you type!
 - **Image Support**: Insert local images or paste screenshots directly into your Markdown notes.
@@ -478,12 +480,22 @@ LIMIT 10;
       createdAt: now - 1300000,
       updatedAt: now - 100000,
     },
+    'file_architecture_diagram': {
+      id: 'file_architecture_diagram',
+      name: 'architecture.excalidraw',
+      type: 'file',
+      parentId: rootNotesId,
+      content: JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2),
+      size: calculateStringSizeBytes(JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2)),
+      createdAt: now - 1200000,
+      updatedAt: now - 50000,
+    },
   };
 
   return {
     version: 1,
     files,
-    openTabIds: ['welcome_file', 'file_meeting_notes', 'file_python_algo', 'file_html_preview'],
+    openTabIds: ['welcome_file', 'file_architecture_diagram', 'file_meeting_notes', 'file_python_algo', 'file_html_preview'],
     activeTabId: 'welcome_file',
     lastUpdated: now,
   };
@@ -493,6 +505,28 @@ export async function loadWorkspace(): Promise<Workspace> {
   try {
     const saved = await get<Workspace>(STORAGE_KEY);
     if (saved && saved.files && Object.keys(saved.files).length > 0) {
+      // Ensure existing users get the demo architecture diagram if no excalidraw file exists
+      const hasExcalidraw = Object.values(saved.files).some((f) => f.name.toLowerCase().endsWith('.excalidraw'));
+      if (!hasExcalidraw) {
+        const demoId = 'file_architecture_diagram';
+        const now = Date.now();
+        const demoContent = JSON.stringify(DEFAULT_EXCALIDRAW_DATA, null, 2);
+        const rootNotes = Object.values(saved.files).find((f) => f.type === 'folder' && f.name === 'notes');
+        const parentId = rootNotes ? rootNotes.id : null;
+        saved.files[demoId] = {
+          id: demoId,
+          name: 'architecture.excalidraw',
+          type: 'file',
+          parentId,
+          content: demoContent,
+          size: calculateStringSizeBytes(demoContent),
+          createdAt: now - 1200000,
+          updatedAt: now - 50000,
+        };
+        if (!saved.openTabIds.includes(demoId)) {
+          saved.openTabIds.splice(1, 0, demoId);
+        }
+      }
       return saved;
     }
   } catch (err) {
@@ -500,7 +534,10 @@ export async function loadWorkspace(): Promise<Workspace> {
     try {
       const local = localStorage.getItem(STORAGE_KEY);
       if (local) {
-        return JSON.parse(local);
+        const parsed = JSON.parse(local);
+        if (parsed && parsed.files && Object.keys(parsed.files).length > 0) {
+          return parsed;
+        }
       }
     } catch {
       // ignore

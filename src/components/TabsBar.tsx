@@ -16,7 +16,7 @@ import {
 import { FileNode, ThemeType } from '../types';
 import { THEMES } from '../utils/themes';
 import { FileIconComponent } from '../utils/fileIcons';
-import { isMarkdownFile, isHtmlFile } from '../utils/languageDetector';
+import { isMarkdownFile, isHtmlFile, isExcalidrawFile } from '../utils/languageDetector';
 import { getFilePath } from '../utils/storage';
 
 interface TabsBarProps {
@@ -66,7 +66,8 @@ export const TabsBar: React.FC<TabsBarProps> = ({
   const activeFile = activeTabId ? files[activeTabId] : null;
   const isMd = activeFile ? isMarkdownFile(activeFile.name) : false;
   const isHtml = activeFile ? isHtmlFile(activeFile.name) : false;
-  const supportsPreview = isMd || isHtml;
+  const isExcalidraw = activeFile ? isExcalidrawFile(activeFile.name) : false;
+  const supportsPreview = isMd || isHtml || isExcalidraw;
 
   // Handle outside clicks and keyboard escape to dismiss context menu
   useEffect(() => {
