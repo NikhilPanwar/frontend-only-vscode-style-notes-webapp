@@ -30,6 +30,29 @@ export function generateRandomImageFilename(extension = 'png'): string {
   return `image_${dateStr}_${timeStr}_${rand}.${extension}`;
 }
 
+export function ensureFileExtension(name: string, defaultExt = 'txt'): string {
+  const clean = name.trim();
+  if (!clean) return `untitled.${defaultExt}`;
+
+  // If it's a dotfile like .gitignore or .env (starts with dot and has chars after it)
+  if (clean.startsWith('.') && clean.length > 1 && !clean.slice(1).includes('.')) {
+    return clean;
+  }
+
+  // Check if there is a dot
+  const lastDotIndex = clean.lastIndexOf('.');
+  if (lastDotIndex === -1) {
+    return `${clean}.${defaultExt}`;
+  }
+
+  // If ends with a dot (e.g. "notes.")
+  if (lastDotIndex === clean.length - 1) {
+    return `${clean}${defaultExt}`;
+  }
+
+  return clean;
+}
+
 export function isNameTakenInFolder(
   name: string,
   parentId: string | null,

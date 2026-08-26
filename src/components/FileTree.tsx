@@ -19,7 +19,14 @@ import {
 import { FileNode, ThemeType } from '../types';
 import { FileIconComponent } from '../utils/fileIcons';
 import { THEMES } from '../utils/themes';
-import { getFilePath, generateRandomImageFilename, formatBytes, calculateStringSizeBytes, isNameTakenInFolder } from '../utils/storage';
+import {
+  getFilePath,
+  generateRandomImageFilename,
+  formatBytes,
+  calculateStringSizeBytes,
+  isNameTakenInFolder,
+  ensureFileExtension,
+} from '../utils/storage';
 
 export interface TreeClipboardState {
   action: 'copy' | 'cut';
@@ -288,7 +295,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   const handleStartCreate = (type: 'file' | 'folder', parentId: string | null = null) => {
     setCreatingType(type);
     setCreatingParentId(parentId);
-    setCreatingName(type === 'file' ? 'untitled.md' : 'new_folder');
+    setCreatingName(type === 'file' ? 'untitled.txt' : 'new_folder');
     // expand parent if it was folder
     if (parentId && files[parentId] && !files[parentId].isExpanded) {
       onToggleFolder(parentId);
@@ -297,8 +304,9 @@ export const FileTree: React.FC<FileTreeProps> = ({
 
   const handleFinishCreate = () => {
     if (!creatingType) return;
-    const cleanName = creatingName.trim();
-    if (cleanName) {
+    const rawName = creatingName.trim();
+    if (rawName) {
+      const cleanName = creatingType === 'file' ? ensureFileExtension(rawName) : rawName;
       if (isNameTakenInFolder(cleanName, creatingParentId, files)) {
         showToast(`"${cleanName}" already exists in this folder!`);
         setCreatingType(null);

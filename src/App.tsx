@@ -22,6 +22,7 @@ import {
   duplicateNodeRecursively,
   getUniqueNameInFolder,
   isNameTakenInFolder,
+  ensureFileExtension,
 } from './utils/storage';
 import { TreeClipboardState } from './components/FileTree';
 import { THEMES } from './utils/themes';
@@ -307,8 +308,9 @@ export default function App() {
   }, []);
 
   const handleCreateFile = useCallback((name: string, parentId: string | null = null, content = '') => {
-    const cleanName = name.trim();
-    if (!cleanName) return;
+    const rawName = name.trim();
+    if (!rawName) return;
+    const cleanName = ensureFileExtension(rawName);
 
     const maxTabs = settings.maxOpenTabs || 10;
     const now = Date.now();
@@ -400,6 +402,7 @@ export default function App() {
             ...node,
             name: cleanName,
             updatedAt: Date.now(),
+            isBinary: isImageFile(cleanName),
           },
         },
         lastUpdated: Date.now(),
@@ -872,7 +875,7 @@ export default function App() {
       // Ctrl + N -> New Note
       if (isCmdOrCtrl && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        handleCreateFile(`note_${Date.now().toString().slice(-4)}.md`, null);
+        handleCreateFile(`note_${Date.now().toString().slice(-4)}.txt`, null);
       }
 
       // Ctrl + Shift + F -> Global Search
@@ -904,7 +907,7 @@ export default function App() {
         category: 'File',
         icon: <FilePlus size={14} />,
         shortcut: 'Ctrl+N',
-        action: () => handleCreateFile('untitled.md', null),
+        action: () => handleCreateFile('untitled.txt', null),
       },
       {
         id: 'cmd-new-folder',
