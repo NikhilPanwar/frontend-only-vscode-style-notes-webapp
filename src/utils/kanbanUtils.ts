@@ -44,6 +44,15 @@ export function generateKanbanId(prefix = 'task'): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
 }
 
+export function createCustomKanbanColumn(title = 'New Column', color = '#3b82f6'): KanbanColumn {
+  return {
+    id: generateKanbanId('col'),
+    title: title.trim() || 'New Column',
+    color: color || '#3b82f6',
+    taskIds: [],
+  };
+}
+
 export function createEmptyKanbanBoard(title = 'Project Board'): KanbanBoardData {
   return {
     type: 'kanban',
@@ -245,7 +254,7 @@ export function parseKanbanData(content: string, fallbackTitle = 'Kanban Board')
     const parsed = JSON.parse(content);
     if (parsed && typeof parsed === 'object') {
       // Validate or repair columns
-      let columns: KanbanColumn[] = Array.isArray(parsed.columns) && parsed.columns.length > 0
+      let columns: KanbanColumn[] = Array.isArray(parsed.columns)
         ? parsed.columns
         : DEFAULT_KANBAN_COLUMNS.map((c) => ({ ...c, taskIds: [] }));
 
