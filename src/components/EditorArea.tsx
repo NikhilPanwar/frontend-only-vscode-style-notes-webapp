@@ -50,12 +50,30 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const [localContent, setLocalContent] = useState<string>(activeFile?.content || '');
   const [sizeWarning, setSizeWarning] = useState<string | null>(null);
   const [isDragOverEditor, setIsDragOverEditor] = useState(false);
+  const lastUserTypedTime = useRef<number>(0);
 
   // Synchronize immediately during render when activeFile changes to avoid stale render lag
   if (activeFile && activeFile.id !== prevFileId) {
     setPrevFileId(activeFile.id);
     setLocalContent(activeFile.content || '');
   }
+
+  // Synchronize when activeFile content changes remotely from another tab
+  useEffect(() => {
+    if (!activeFile) return;
+    const now = Date.now();
+    // If not recently typed locally (within 350ms) and prop content differs, update local content
+    if (activeFile.content !== undefined && activeFile.content !== localContent) {
+      if (now - lastUserTypedTime.current > 350) {
+        setLocalContent(activeFile.content);
+        if (editorRef.current && editorRef.current.getValue() !== activeFile.content) {
+          const pos = editorRef.current.getPosition();
+          editorRef.current.setValue(activeFile.content);
+          if (pos) editorRef.current.setPosition(pos);
+        }
+      }
+    }
+  }, [activeFile?.content, activeFile?.updatedAt]);
 
   useEffect(() => {
     if (activeFile) {
@@ -174,6 +192,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
   const handleEditorChange = (value: string | undefined) => {
     if (!activeFile) return;
+    lastUserTypedTime.current = Date.now();
     const text = value || '';
     const bytes = calculateStringSizeBytes(text);
 

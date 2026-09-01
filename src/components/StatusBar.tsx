@@ -6,9 +6,8 @@ import {
   WrapText,
   Palette,
   GitBranch,
-  ShieldCheck,
   FileCode,
-  AlertCircle,
+  Radio,
 } from 'lucide-react';
 import { CursorPosition, EditorSettings, FileNode, ThemeType, MAX_NOTE_SIZE_BYTES } from '../types';
 import { THEMES } from '../utils/themes';
@@ -21,6 +20,7 @@ interface StatusBarProps {
   currentTheme: ThemeType;
   settings: EditorSettings;
   isSaving: boolean;
+  lastSyncEvent?: { type: string; timestamp: number } | null;
   onOpenLanguageSelector: () => void;
   onOpenThemeSelector: () => void;
   onToggleWordWrap: () => void;
@@ -32,6 +32,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   currentTheme,
   settings,
   isSaving,
+  lastSyncEvent,
   onOpenLanguageSelector,
   onOpenThemeSelector,
   onToggleWordWrap,
@@ -40,6 +41,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   const lang = activeFile ? detectLanguageByFilename(activeFile.name) : null;
   const fileSize = activeFile ? activeFile.size : 0;
   const sizePercentage = Math.min(100, Math.round((fileSize / MAX_NOTE_SIZE_BYTES) * 100));
+
+  const isRecentSync = lastSyncEvent && Date.now() - lastSyncEvent.timestamp < 3000;
 
   return (
     <footer
@@ -58,6 +61,19 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         >
           <GitBranch size={12} />
           <span>offline/main</span>
+        </div>
+
+        {/* Live Multi-Tab Sync Indicator */}
+        <div
+          className={`flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer transition-all ${
+            isRecentSync ? 'bg-emerald-400/30 text-emerald-100' : 'hover:bg-white/20 text-white/90'
+          }`}
+          title="Live Tab Sync: Real-time broadcast channel synchronizes changes across all open browser tabs instantly without data loss"
+        >
+          <Radio size={11} className={isRecentSync ? 'animate-pulse text-emerald-300' : 'text-sky-200'} />
+          <span className="hidden md:inline">
+            {isRecentSync ? 'Tabs Synced' : 'Multi-Tab Sync'}
+          </span>
         </div>
 
         {/* Auto-Save Status */}

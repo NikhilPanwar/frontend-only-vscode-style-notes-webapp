@@ -29,6 +29,7 @@ import { THEMES } from './utils/themes';
 import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile, isKanbanFile } from './utils/languageDetector';
 import { EMPTY_EXCALIDRAW_DATA, getThemeCanvasColor } from './utils/excalidrawTemplates';
 import { createEmptyKanbanBoard, serializeKanbanData } from './utils/kanbanUtils';
+import { syncBus } from './utils/syncBus';
 import { TitleBar } from './components/TitleBar';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
@@ -135,6 +136,7 @@ export default function App() {
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [deleteConfirmNode, setDeleteConfirmNode] = useState<FileNode | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [lastSyncEvent, setLastSyncEvent] = useState<{ type: string; timestamp: number } | null>(null);
 
   // Load Workspace from IndexedDB on initial mount
   useEffect(() => {
@@ -148,6 +150,194 @@ export default function App() {
       }
     }
     init();
+  }, []);
+
+  // Multi-Tab Synchronization Bus Listener
+  useEffect(() => {
+    const unsubscribe = syncBus.subscribe((msg) => {
+      setLastSyncEvent({ type: msg.type, timestamp: Date.now() });
+
+      switch (msg.type) {
+        case 'FILE_CONTENT_UPDATED': {
+          const { fileId, content, size, updatedAt } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev || !prev.files[fileId]) return prev;
+            const existing = prev.files[fileId];
+            if (existing.content === content) return prev;
+            return {
+              ...prev,
+              files: {
+                ...prev.files,
+                [fileId]: {
+                  ...existing,
+                  content,
+                  size,
+                  updatedAt: Math.max(updatedAt, existing.updatedAt || 0),
+                },
+              },
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'FILE_CREATED': {
+          const { file } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              files: {
+                ...prev.files,
+                [file.id]: file,
+              },
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'FOLDER_CREATED': {
+          const { folder } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              files: {
+                ...prev.files,
+                [folder.id]: folder,
+              },
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'NODE_RENAMED': {
+          const { id, newName, updatedAt } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev || !prev.files[id]) return prev;
+            const existing = prev.files[id];
+            return {
+              ...prev,
+              files: {
+                ...prev.files,
+                [id]: {
+                  ...existing,
+                  name: newName,
+                  updatedAt,
+                  isBinary: isImageFile(newName),
+                },
+              },
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'NODE_DELETED': {
+          const { deletedIds } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev) return prev;
+            const newFiles = { ...prev.files };
+            deletedIds.forEach((id) => {
+              delete newFiles[id];
+            });
+            const newOpenTabs = prev.openTabIds.filter((id) => !deletedIds.includes(id));
+            let newActiveTabId = prev.activeTabId;
+            if (newActiveTabId && deletedIds.includes(newActiveTabId)) {
+              newActiveTabId = newOpenTabs.length > 0 ? newOpenTabs[0] : null;
+            }
+            return {
+              ...prev,
+              files: newFiles,
+              openTabIds: newOpenTabs,
+              activeTabId: newActiveTabId,
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'NODE_MOVED': {
+          const { sourceId, targetParentId, newName, updatedAt } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev || !prev.files[sourceId]) return prev;
+            const existing = prev.files[sourceId];
+            return {
+              ...prev,
+              files: {
+                ...prev.files,
+                [sourceId]: {
+                  ...existing,
+                  name: newName,
+                  parentId: targetParentId,
+                  updatedAt,
+                },
+              },
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'NODES_DUPLICATED': {
+          const { newNodes } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev) return prev;
+            const newFiles = { ...prev.files };
+            newNodes.forEach((node) => {
+              newFiles[node.id] = node;
+            });
+            return {
+              ...prev,
+              files: newFiles,
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'FILES_BATCH_ADDED': {
+          const { nodes } = msg.payload;
+          setWorkspace((prev) => {
+            if (!prev) return prev;
+            const newFiles = { ...prev.files };
+            nodes.forEach((node) => {
+              newFiles[node.id] = node;
+            });
+            return {
+              ...prev,
+              files: newFiles,
+              lastUpdated: Date.now(),
+            };
+          });
+          break;
+        }
+
+        case 'SETTINGS_UPDATED': {
+          const { settings: newSettings } = msg.payload;
+          setSettings((prev) => ({ ...prev, ...newSettings }));
+          break;
+        }
+
+        case 'THEME_CHANGED': {
+          const { theme: remoteTheme } = msg.payload;
+          setCurrentTheme(remoteTheme);
+          break;
+        }
+
+        case 'WORKSPACE_RESET': {
+          const { workspace: newWs } = msg.payload;
+          setWorkspace(newWs);
+          break;
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Save Theme and Settings changes to localStorage
@@ -234,7 +424,10 @@ export default function App() {
   }, []);
 
   // Settings update helper
-  const handleUpdateSettings = (newSettings: Partial<EditorSettings>) => {
+  const handleUpdateSettings = (newSettings: Partial<EditorSettings>, shouldBroadcast = true) => {
+    if (shouldBroadcast) {
+      syncBus.publish('SETTINGS_UPDATED', { settings: newSettings });
+    }
     setSettings((prev) => {
       const next = { ...prev, ...newSettings };
       if (newSettings.maxOpenTabs !== undefined && workspace) {
@@ -253,9 +446,12 @@ export default function App() {
     });
   };
 
-  const handleThemeChange = (newTheme: ThemeType) => {
+  const handleThemeChange = (newTheme: ThemeType, shouldBroadcast = true) => {
+    if (shouldBroadcast) {
+      syncBus.publish('THEME_CHANGED', { theme: newTheme });
+    }
     setCurrentTheme(newTheme);
-    handleUpdateSettings({ theme: newTheme });
+    handleUpdateSettings({ theme: newTheme }, shouldBroadcast);
   };
 
   // --- FILE & TAB ACTIONS ---
@@ -442,6 +638,9 @@ export default function App() {
         isBinary: isImageFile(uniqueName),
       };
 
+      // Broadcast new file creation to other open browser tabs
+      syncBus.publish('FILE_CREATED', { file: newFile, openInTab: false });
+
       let newTabs = [...prev.openTabIds, id];
       if (newTabs.length > maxTabs) {
         newTabs = enforceTabLimit(newTabs, id, maxTabs);
@@ -458,7 +657,7 @@ export default function App() {
         lastUpdated: now,
       };
     });
-  }, [settings.maxOpenTabs, enforceTabLimit]);
+  }, [settings.maxOpenTabs, settings.theme, enforceTabLimit]);
 
   const handleCreateFolder = useCallback((name: string, parentId: string | null = null) => {
     const cleanName = name.trim();
@@ -482,6 +681,9 @@ export default function App() {
         isExpanded: true,
       };
 
+      // Broadcast new folder creation to other tabs
+      syncBus.publish('FOLDER_CREATED', { folder: newFolder });
+
       return {
         ...prev,
         files: {
@@ -503,6 +705,10 @@ export default function App() {
       if (isNameTakenInFolder(cleanName, node.parentId, prev.files, id)) {
         return prev;
       }
+      const now = Date.now();
+      // Broadcast rename to other tabs
+      syncBus.publish('NODE_RENAMED', { id, newName: cleanName, updatedAt: now });
+
       return {
         ...prev,
         files: {
@@ -510,11 +716,11 @@ export default function App() {
           [id]: {
             ...node,
             name: cleanName,
-            updatedAt: Date.now(),
+            updatedAt: now,
             isBinary: isImageFile(cleanName),
           },
         },
-        lastUpdated: Date.now(),
+        lastUpdated: now,
       };
     });
   }, []);
@@ -549,6 +755,12 @@ export default function App() {
 
       idsToDelete.forEach((nodeId) => {
         delete newFiles[nodeId];
+      });
+
+      // Broadcast deletion of nodes to other tabs
+      syncBus.publish('NODE_DELETED', {
+        deletedIds: Array.from(idsToDelete),
+        targetId,
       });
 
       const newOpenTabs = prev.openTabIds.filter((tabId) => !idsToDelete.has(tabId));
@@ -622,6 +834,15 @@ export default function App() {
       if (!prev || !prev.files[fileId]) return prev;
       const target = prev.files[fileId];
       const newSize = calculateStringSizeBytes(newContent);
+      const now = Date.now();
+
+      // Broadcast file content update to other tabs
+      syncBus.publish('FILE_CONTENT_UPDATED', {
+        fileId,
+        content: newContent,
+        size: newSize,
+        updatedAt: now,
+      });
 
       return {
         ...prev,
@@ -631,10 +852,10 @@ export default function App() {
             ...target,
             content: newContent,
             size: newSize,
-            updatedAt: Date.now(),
+            updatedAt: now,
           },
         },
-        lastUpdated: Date.now(),
+        lastUpdated: now,
       };
     });
   }, []);
@@ -657,11 +878,13 @@ export default function App() {
         if (!prev) return prev;
         const newFiles = { ...prev.files };
         let newOpenTabs = [...prev.openTabIds];
+        const processedNodes: FileNode[] = [];
 
         newNodes.forEach((n) => {
           const uniqueName = getUniqueNameInFolder(n.name, targetParentId, newFiles);
           const uniqueNode: FileNode = { ...n, name: uniqueName };
           newFiles[uniqueNode.id] = uniqueNode;
+          processedNodes.push(uniqueNode);
           if (!newOpenTabs.includes(uniqueNode.id)) {
             newOpenTabs.push(uniqueNode.id);
           }
@@ -673,6 +896,12 @@ export default function App() {
           const isExcal = isExcalidrawFile(activeNode.name);
           setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
         }
+
+        // Broadcast batch added nodes
+        syncBus.publish('FILES_BATCH_ADDED', {
+          nodes: processedNodes,
+          activeId,
+        });
 
         if (newOpenTabs.length > maxTabs) {
           newOpenTabs = enforceTabLimit(newOpenTabs, activeId, maxTabs);
@@ -706,6 +935,15 @@ export default function App() {
       }
 
       const uniqueName = getUniqueNameInFolder(source.name, targetParentId, prev.files, sourceId);
+      const now = Date.now();
+
+      // Broadcast move to other tabs
+      syncBus.publish('NODE_MOVED', {
+        sourceId,
+        targetParentId,
+        newName: uniqueName,
+        updatedAt: now,
+      });
 
       return {
         ...prev,
@@ -715,10 +953,10 @@ export default function App() {
             ...source,
             name: uniqueName,
             parentId: targetParentId,
-            updatedAt: Date.now(),
+            updatedAt: now,
           },
         },
-        lastUpdated: Date.now(),
+        lastUpdated: now,
       };
     });
   }, []);
@@ -736,6 +974,9 @@ export default function App() {
           workspace.files
         );
         if (newNodes.length > 0) {
+          // Broadcast duplicated nodes to other tabs
+          syncBus.publish('NODES_DUPLICATED', { newNodes, rootNewId });
+
           const maxTabs = settings.maxOpenTabs || 10;
           setWorkspace((prev) => {
             if (!prev) return prev;
@@ -787,6 +1028,9 @@ export default function App() {
         mimeType: 'image/png',
       };
 
+      // Broadcast image file creation to other tabs
+      syncBus.publish('FILE_CREATED', { file: newImgNode, openInTab: false });
+
       setWorkspace((prev) => {
         if (!prev) return prev;
         let newTabs = prev.openTabIds.includes(imageId) ? prev.openTabIds : [...prev.openTabIds, imageId];
@@ -836,6 +1080,9 @@ export default function App() {
         mimeType: 'image/png',
       };
 
+      // Broadcast image file creation to other tabs
+      syncBus.publish('FILE_CREATED', { file: newImgNode, openInTab: false });
+
       setWorkspace((prev) => {
         if (!prev) return prev;
         return {
@@ -876,6 +1123,8 @@ export default function App() {
   const confirmResetWorkspace = useCallback(async () => {
     const defaultWs = createDefaultWorkspace();
     setWorkspace(defaultWs);
+    // Broadcast reset to other tabs
+    syncBus.publish('WORKSPACE_RESET', { workspace: defaultWs });
     await saveWorkspace(defaultWs);
     setIsResetConfirmOpen(false);
   }, []);
@@ -903,6 +1152,9 @@ export default function App() {
           isBinary: true,
           mimeType: 'image/png',
         };
+
+        // Broadcast image creation
+        syncBus.publish('FILE_CREATED', { file: newImgNode, openInTab: false });
 
         setWorkspace((prev) => {
           if (!prev) return prev;
@@ -1351,6 +1603,7 @@ export default function App() {
         currentTheme={currentTheme}
         settings={settings}
         isSaving={isSaving}
+        lastSyncEvent={lastSyncEvent}
         onOpenLanguageSelector={() => setIsLanguageSelectorOpen(true)}
         onOpenThemeSelector={() => {
           setIsSidebarOpen(true);
