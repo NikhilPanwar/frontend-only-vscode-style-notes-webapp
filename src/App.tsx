@@ -1665,6 +1665,7 @@ export default function App() {
         onConfirm={confirmResetWorkspace}
         currentTheme={currentTheme}
         totalNotes={totalNotes}
+        files={files}
       />
     </div>
   );
