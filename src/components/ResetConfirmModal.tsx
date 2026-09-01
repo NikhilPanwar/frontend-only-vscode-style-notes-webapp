@@ -25,7 +25,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
   return (
     <div
       id="reset-workspace-confirm-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs select-none animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div

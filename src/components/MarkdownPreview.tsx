@@ -76,7 +76,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
 
   return (
     <div
-      className={`h-full overflow-y-auto p-6 scrollbar-thin transition-colors ${
+      className={`h-full overflow-y-auto p-3 sm:p-6 scrollbar-thin transition-colors ${
         isDark ? 'prose-invert' : ''
       }`}
       style={{

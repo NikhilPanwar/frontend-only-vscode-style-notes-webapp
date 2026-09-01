@@ -105,11 +105,11 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       {/* Center: Search / Quick Open Pill */}
-      <div className="flex-1 max-w-md mx-2">
+      <div className="flex-1 min-w-[100px] max-w-md mx-1 sm:mx-2">
         <button
           id="btn-quick-open-trigger"
           onClick={onOpenQuickOpen}
-          className="w-full h-7 px-3 rounded text-xs flex items-center justify-between border transition-all hover:brightness-105 shadow-xs"
+          className="w-full h-7 px-2 sm:px-3 rounded text-xs flex items-center justify-between border transition-all hover:brightness-105 shadow-xs"
           style={{
             backgroundColor: theme.ui.inputBg,
             borderColor: theme.ui.border,
@@ -117,10 +117,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           }}
           title="Search files by name (Ctrl+P / Cmd+P)"
         >
-          <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
             <Search size={12} className="shrink-0" style={{ color: theme.ui.textMuted }} />
-            <span className="truncate">
-              {activeFile ? `VS Code Notes - ${activeFile.name}` : 'Search notes & files...'}
+            <span className="truncate text-[11px] sm:text-xs">
+              {activeFile ? activeFile.name : 'Search notes...'}
             </span>
           </div>
           <kbd
@@ -136,7 +136,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-1 shrink-0" style={{ color: theme.ui.textMuted }}>
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0" style={{ color: theme.ui.textMuted }}>
         {/* Offline & Size Badge */}
         <div
           className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono border"
@@ -155,7 +155,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <button
           id="btn-title-new-file"
           onClick={onCreateNewFile}
-          className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+          className="p-1.5 sm:p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
           style={{ color: theme.ui.textMuted }}
           title="New Note (Ctrl+N)"
         >
@@ -167,7 +167,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <button
             id="btn-title-preview-mode"
             onClick={onTogglePreview}
-            className={`p-1.5 rounded transition-colors ${
+            className={`p-1.5 sm:p-1.5 rounded transition-colors flex items-center justify-center ${
               previewMode !== 'editor'
                 ? 'text-blue-500 bg-blue-500/15'
                 : 'hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500'
@@ -183,7 +183,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <button
           id="btn-toggle-sidebar"
           onClick={onToggleSidebar}
-          className={`p-1.5 rounded transition-colors ${
+          className={`p-1.5 sm:p-1.5 rounded transition-colors flex items-center justify-center ${
             isSidebarOpen
               ? 'text-blue-500 bg-blue-500/15'
               : 'hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500'
@@ -198,7 +198,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <button
           id="btn-export-zip"
           onClick={onExportZip}
-          className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+          className="p-1.5 sm:p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
           style={{ color: theme.ui.textMuted }}
           title="Export Workspace as ZIP"
         >
@@ -220,7 +220,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
             const nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
             onThemeChange(themes[nextIdx]);
           }}
-          className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+          className="p-1.5 sm:p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
           style={{ color: theme.ui.textMuted }}
           title={`Current Theme: ${theme.name}. Click to cycle themes.`}
         >

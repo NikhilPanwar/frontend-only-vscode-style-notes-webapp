@@ -188,11 +188,11 @@ export const KanbanTaskModal: React.FC<KanbanTaskModalProps> = ({
   return (
     <div
       id="kanban-task-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs select-none"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] rounded-lg shadow-2xl border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+        className="w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] rounded-lg shadow-2xl border flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
         style={{
           backgroundColor: theme.ui.modalBg,
           borderColor: theme.ui.border,
@@ -202,7 +202,7 @@ export const KanbanTaskModal: React.FC<KanbanTaskModalProps> = ({
       >
         {/* Modal Header */}
         <div
-          className="flex items-center justify-between px-5 py-3.5 border-b shrink-0"
+          className="flex items-center justify-between px-3.5 sm:px-5 py-3 sm:py-3.5 border-b shrink-0"
           style={{ borderColor: theme.ui.border }}
         >
           <div className="flex items-center gap-2.5">
@@ -236,7 +236,7 @@ export const KanbanTaskModal: React.FC<KanbanTaskModalProps> = ({
         </div>
 
         {/* Modal Body - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-4 sm:space-y-5">
           {/* Task Title */}
           <div>
             <label

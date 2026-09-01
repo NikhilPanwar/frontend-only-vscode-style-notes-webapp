@@ -50,10 +50,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       }}
     >
       {/* Left side items */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Offline Status */}
         <div
-          className="flex items-center gap-1 hover:bg-white/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+          className="hidden sm:flex items-center gap-1 hover:bg-white/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
           title="100% Offline Notes persistent via browser IndexedDB"
         >
           <GitBranch size={12} />
@@ -78,21 +78,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         {/* Note Size vs 1MB Max */}
         {activeFile && (
           <div
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-1.5 py-0.5 rounded cursor-pointer ${
               fileSize > MAX_NOTE_SIZE_BYTES * 0.9 ? 'bg-red-500/30 text-amber-200' : 'hover:bg-white/20'
             }`}
             title={`Current Note Size: ${formatBytes(fileSize)} (Max: 1.00 MB / 1,048,576 bytes)`}
           >
             <HardDrive size={11} />
-            <span>
+            <span className="hidden sm:inline">
               {formatBytes(fileSize)} / 1.0 MB ({sizePercentage}%)
+            </span>
+            <span className="sm:hidden">
+              {formatBytes(fileSize)}
             </span>
           </div>
         )}
       </div>
 
       {/* Right side items */}
-      <div className="flex items-center gap-2 font-mono text-[11px]">
+      <div className="flex items-center gap-1.5 sm:gap-2 font-mono text-[11px] shrink-0">
         {/* Cursor Coordinates */}
         {activeFile && (
           <div className="hover:bg-white/20 px-1.5 py-0.5 rounded cursor-pointer transition-colors">
@@ -113,11 +116,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         {/* Word Wrap Status */}
         <button
           onClick={onToggleWordWrap}
-          className="hover:bg-white/20 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1"
+          className="hover:bg-white/20 px-1.5 py-0.5 rounded transition-colors hidden xs:flex items-center gap-1"
           title="Toggle Word Wrap (Alt+Z)"
         >
           <WrapText size={11} />
-          <span>Wrap: {settings.wordWrap ? 'On' : 'Off'}</span>
+          <span className="hidden sm:inline">Wrap: {settings.wordWrap ? 'On' : 'Off'}</span>
         </button>
 
         {/* Language Mode Picker */}
@@ -128,14 +131,14 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             title="Select Language Mode (Click to change syntax)"
           >
             <FileCode size={11} />
-            <span>{lang.name}</span>
+            <span className="truncate max-w-[80px] sm:max-w-none">{lang.name}</span>
           </button>
         )}
 
         {/* Theme Quick Click */}
         <button
           onClick={onOpenThemeSelector}
-          className="hover:bg-white/20 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 font-sans"
+          className="hover:bg-white/20 px-1.5 py-0.5 rounded transition-colors hidden sm:flex items-center gap-1 font-sans"
           title="Theme: Click to change"
         >
           <Palette size={11} />

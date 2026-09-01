@@ -18,6 +18,7 @@ interface EditorAreaProps {
   currentTheme: ThemeType;
   settings: EditorSettings;
   targetLineNumber?: number;
+  isMobile?: boolean;
   onContentChange: (fileId: string, newContent: string) => void;
   onCursorChange: (pos: CursorPosition) => void;
   onCreateNewFile: () => void;
@@ -32,6 +33,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   currentTheme,
   settings,
   targetLineNumber,
+  isMobile = false,
   onContentChange,
   onCursorChange,
   onCreateNewFile,
@@ -256,12 +258,12 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       )}
 
       {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className={`flex-1 flex overflow-hidden ${renderEditor && renderPreview ? 'flex-col md:flex-row' : 'flex-row'}`}>
         {/* Editor Pane */}
         {renderEditor && (
           <div
-            className={`h-full flex-1 relative ${
-              renderPreview ? 'border-r' : ''
+            className={`flex-1 relative ${
+              renderPreview ? 'h-1/2 md:h-full border-b md:border-b-0 md:border-r' : 'h-full'
             }`}
             style={{
               borderColor: theme.ui.border,
@@ -279,7 +281,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
                 fontSize: settings.fontSize,
                 tabSize: settings.tabSize,
                 wordWrap: settings.wordWrap ? 'on' : 'off',
-                minimap: { enabled: settings.minimap },
+                minimap: { enabled: isMobile ? false : settings.minimap },
                 lineNumbers: settings.lineNumbers,
                 automaticLayout: true,
                 scrollBeyondLastLine: false,
@@ -307,7 +309,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
         {/* Live Preview Pane (Markdown, HTML, Excalidraw, or Kanban) */}
         {renderPreview && (
-          <div className="h-full flex-1 overflow-hidden">
+          <div className={`flex-1 overflow-hidden ${renderEditor ? 'h-1/2 md:h-full' : 'h-full'}`}>
             {isMd && (
               <MarkdownPreview
                 content={localContent}

@@ -65,7 +65,7 @@ export const LanguageSelectorModal: React.FC<LanguageSelectorModalProps> = ({
   return (
     <div
       id="language-selector-modal"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/60 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-6 sm:pt-16 px-2 sm:px-4 bg-black/60 backdrop-blur-xs select-none"
       onClick={onClose}
     >
       <div

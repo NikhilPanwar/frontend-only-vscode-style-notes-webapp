@@ -108,10 +108,21 @@ export default function App() {
   });
 
   // 3. Layout & Navigation State
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
   const [activeSidebarTab, setActiveSidebarTab] = useState<ActiveSidebarTab>('explorer');
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [isResizing, setIsResizing] = useState(false);
+
+  // Track window resize to detect mobile vs desktop viewports
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 4. Editor Interaction State
   const [cursorPos, setCursorPos] = useState<CursorPosition>({ lineNumber: 1, column: 1 });
@@ -286,7 +297,12 @@ export default function App() {
       // Reset target after a short frame
       setTimeout(() => setTargetLineNumber(undefined), 100);
     }
-  }, [workspace, settings.maxOpenTabs, enforceTabLimit]);
+
+    // On mobile screens, automatically close the sidebar drawer when opening a file
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  }, [workspace, settings.maxOpenTabs, enforceTabLimit, isMobile]);
 
   const handleCloseTab = useCallback((fileId: string) => {
     setWorkspace((prev) => {
@@ -1256,6 +1272,8 @@ export default function App() {
           totalNotes={totalNotes}
           totalFolders={totalFolders}
           totalSizeFormatted={formattedTotalSize}
+          isMobile={isMobile}
+          onCloseMobile={() => setIsSidebarOpen(false)}
           onOpenFile={(id) => handleOpenFile(id)}
           onCreateFile={handleCreateFile}
           onCreateFolder={handleCreateFolder}
@@ -1312,6 +1330,7 @@ export default function App() {
             currentTheme={currentTheme}
             settings={settings}
             targetLineNumber={targetLineNumber}
+            isMobile={isMobile}
             onContentChange={handleContentChange}
             onCursorChange={setCursorPos}
             onCreateNewFile={() => handleCreateFile('untitled.md', null)}

@@ -137,7 +137,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
       {/* Left: Scrollable Tabs list */}
       <div
         ref={tabsScrollRef}
-        className="flex-1 flex items-center h-full overflow-x-auto scrollbar-none"
+        className="flex-1 flex items-center h-full overflow-x-auto scrollbar-none touch-pan-x"
       >
         {openTabIds.map((tabId, index) => {
           const file = files[tabId];
@@ -158,7 +158,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
                   onCloseTab(tabId);
                 }
               }}
-              className={`group flex items-center gap-2 h-full px-3 text-xs border-r cursor-pointer transition-colors relative min-w-[120px] max-w-[200px] ${
+              className={`group flex items-center gap-1.5 sm:gap-2 h-full px-2 sm:px-3 text-xs border-r cursor-pointer transition-colors relative min-w-[95px] max-w-[150px] sm:min-w-[120px] sm:max-w-[200px] shrink-0 ${
                 isActive ? 'font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-85 hover:opacity-100'
               }`}
               style={{
@@ -177,7 +177,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
               )}
 
               <FileIconComponent filename={file.name} size={14} />
-              <span className="truncate flex-1 text-xs">{file.name}</span>
+              <span className="truncate flex-1 text-[11px] sm:text-xs">{file.name}</span>
 
               {/* Close Button */}
               <button
@@ -185,10 +185,10 @@ export const TabsBar: React.FC<TabsBarProps> = ({
                   e.stopPropagation();
                   onCloseTab(tabId);
                 }}
-                className={`p-0.5 rounded transition-colors ${
+                className={`p-1 sm:p-0.5 rounded transition-colors ${
                   isActive
                     ? 'opacity-80 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20'
-                    : 'opacity-0 group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20'
+                    : 'opacity-60 sm:opacity-0 group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/20'
                 }`}
                 title="Close Tab (Ctrl+W)"
               >
@@ -201,7 +201,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
 
       {/* Right: Actions Bar */}
       <div
-        className="flex items-center gap-0.5 px-2 shrink-0 border-l"
+        className="flex items-center gap-0.5 px-1.5 sm:px-2 shrink-0 border-l"
         style={{
           borderColor: theme.ui.border,
           backgroundColor: theme.ui.bgTabs,
@@ -222,7 +222,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
           <button
             id="tab-btn-insert-image"
             onClick={onOpenImageUpload}
-            className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+            className="p-1 sm:p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
             style={{ color: theme.ui.textMuted }}
             title="Insert Image into Markdown"
           >
@@ -233,7 +233,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
         {/* Preview Mode Switcher */}
         {supportsPreview && (
           <div
-            className="flex items-center rounded border p-0.5 mx-1"
+            className="flex items-center rounded border p-0.5 mx-0.5 sm:mx-1"
             style={{
               borderColor: theme.ui.border,
               backgroundColor: theme.ui.inputBg,
@@ -241,7 +241,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
           >
             <button
               onClick={onTogglePreviewMode}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+              className={`flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-medium transition-colors ${
                 previewMode === 'editor'
                   ? 'bg-blue-600 text-white'
                   : previewMode === 'split'
@@ -259,7 +259,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
               {previewMode === 'editor' && <Code size={12} />}
               {previewMode === 'split' && <Columns2 size={12} />}
               {previewMode === 'preview' && <Eye size={12} />}
-              <span className="capitalize">{previewMode}</span>
+              <span className="capitalize hidden xs:inline">{previewMode}</span>
             </button>
           </div>
         )}
@@ -268,7 +268,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
         <button
           id="tab-btn-word-wrap"
           onClick={onToggleWordWrap}
-          className={`p-1 rounded transition-colors ${
+          className={`p-1 sm:p-1 rounded transition-colors flex items-center justify-center ${
             wordWrap ? 'text-blue-500 bg-blue-500/15' : 'hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500'
           }`}
           style={{ color: wordWrap ? undefined : theme.ui.textMuted }}
@@ -282,7 +282,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
           <button
             id="tab-btn-copy"
             onClick={onCopyContent}
-            className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+            className="p-1 sm:p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
             style={{ color: theme.ui.textMuted }}
             title="Copy Note Content"
           >
@@ -295,7 +295,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
           <button
             id="tab-btn-download"
             onClick={onDownloadFile}
-            className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors"
+            className="p-1 sm:p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-blue-500 transition-colors flex items-center justify-center"
             style={{ color: theme.ui.textMuted }}
             title="Download File"
           >
@@ -308,7 +308,7 @@ export const TabsBar: React.FC<TabsBarProps> = ({
           <button
             id="tab-btn-close-all"
             onClick={onCloseAllTabs}
-            className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-500 transition-colors"
+            className="p-1 sm:p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 hover:text-red-500 transition-colors flex items-center justify-center"
             style={{ color: theme.ui.textMuted }}
             title="Close All Tabs"
           >

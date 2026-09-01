@@ -811,7 +811,7 @@ export const KanbanEditor: React.FC<KanbanEditorProps> = ({
               title="Add a custom column to this board"
             >
               <Columns size={13} className="text-blue-500" />
-              <span>Add Column</span>
+              <span className="hidden sm:inline">Add Column</span>
             </button>
 
             {/* Board Options / Reset Menu */}
@@ -1017,7 +1017,7 @@ export const KanbanEditor: React.FC<KanbanEditorProps> = ({
           onDeleteColumn={handleDeleteColumnClick}
         />
       ) : (
-        <div className="flex-1 overflow-x-auto p-4 flex gap-4 items-start custom-scrollbar">
+        <div className="flex-1 overflow-x-auto p-2 sm:p-4 flex gap-3 sm:gap-4 items-start custom-scrollbar touch-pan-x">
         {board.columns.length === 0 ? (
           /* Empty Board State */
           <div
@@ -1081,7 +1081,7 @@ export const KanbanEditor: React.FC<KanbanEditorProps> = ({
                 id={`kanban-column-${column.id}`}
                 onDragOver={(e) => handleDragOverColumn(e, column.id)}
                 onDrop={(e) => handleDropOnColumn(e, column.id)}
-                className={`w-72 sm:w-80 shrink-0 max-h-full flex flex-col rounded-lg border transition-colors relative ${
+                className={`w-[85vw] max-w-[320px] sm:w-80 shrink-0 max-h-full flex flex-col rounded-lg border transition-colors relative ${
                   isDragOver ? 'ring-2 ring-blue-500/60 bg-blue-500/5' : ''
                 }`}
                 style={{
