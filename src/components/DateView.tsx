@@ -383,9 +383,9 @@ export const DateView: React.FC<DateViewProps> = ({
               onClick={() => setSortOrder((o) => (o === 'desc' ? 'asc' : 'desc'))}
               className="p-1 rounded border transition-colors flex items-center justify-center shadow-2xs hover:border-blue-500 hover:text-blue-500"
               style={{
-                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : theme.ui.inputBg,
                 borderColor: theme.ui.border,
-                color: theme.isDark ? '#e4e4e7' : '#1f2937',
+                color: theme.isDark ? '#e4e4e7' : theme.ui.textMain,
               }}
               title={sortOrder === 'desc' ? 'Newest dates first (click for oldest)' : 'Oldest dates first (click for newest)'}
             >
@@ -398,9 +398,9 @@ export const DateView: React.FC<DateViewProps> = ({
               onClick={Object.keys(collapsedGroups).length > 0 ? handleExpandAll : handleCollapseAll}
               className="p-1 rounded border transition-colors flex items-center justify-center shadow-2xs hover:border-blue-500 hover:text-blue-500"
               style={{
-                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                backgroundColor: theme.isDark ? 'rgba(255,255,255,0.06)' : theme.ui.inputBg,
                 borderColor: theme.ui.border,
-                color: theme.isDark ? '#e4e4e7' : '#1f2937',
+                color: theme.isDark ? '#e4e4e7' : theme.ui.textMain,
               }}
               title={Object.keys(collapsedGroups).length > 0 ? 'Expand All Dates' : 'Collapse All Dates'}
             >

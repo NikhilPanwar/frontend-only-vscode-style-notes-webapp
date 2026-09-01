@@ -132,7 +132,8 @@ export default function App() {
       setWorkspace(ws);
       if (ws.activeTabId && ws.files[ws.activeTabId]) {
         const isExcal = isExcalidrawFile(ws.files[ws.activeTabId].name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(ws.files[ws.activeTabId].name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : s.previewMode || 'editor' }));
       }
     }
     init();
@@ -532,7 +533,8 @@ export default function App() {
 
       if (newActiveTabId && newFiles[newActiveTabId]) {
         const isExcal = isExcalidrawFile(newFiles[newActiveTabId].name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(newFiles[newActiveTabId].name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
       }
 
       return {

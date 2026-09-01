@@ -154,7 +154,7 @@ export const THEMES: Record<ThemeType, ThemeConfig> = {
       lineHighlight: '#eee8d5',
       badgeBg: '#dfd8c2',
       badgeText: '#073642',
-      inputBg: '#ffffff',
+      inputBg: '#eee8d5',
       modalBg: '#fdf6e3',
     },
   },

@@ -330,9 +330,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             onClick={onResetWorkspace}
             className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded border transition-colors text-[11px] font-semibold hover:border-red-500 hover:text-red-600 dark:hover:text-red-400 shadow-2xs"
             style={{
-              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : '#ffffff',
+              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.05)' : theme.ui.inputBg,
               borderColor: theme.ui.border,
-              color: theme.isDark ? '#e4e4e7' : '#374151',
+              color: theme.isDark ? '#e4e4e7' : theme.ui.textMain,
             }}
           >
             <RotateCcw size={13} className="text-red-500 shrink-0" />

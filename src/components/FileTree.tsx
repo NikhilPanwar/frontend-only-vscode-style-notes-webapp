@@ -838,7 +838,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         <div
           className="flex items-center w-full rounded p-0.5 border"
           style={{
-            backgroundColor: theme.isDark ? 'rgba(0,0,0,0.4)' : '#e5e7eb',
+            backgroundColor: theme.isDark ? 'rgba(0,0,0,0.4)' : theme.ui.inputBg,
             borderColor: theme.ui.border,
           }}
         >
@@ -851,7 +851,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 : 'hover:opacity-100 opacity-80'
             }`}
             style={{
-              color: explorerViewMode === 'tree' ? '#ffffff' : theme.isDark ? '#d4d4d8' : '#1f2937',
+              color: explorerViewMode === 'tree' ? '#ffffff' : theme.isDark ? '#d4d4d8' : theme.ui.textMain,
             }}
             title="Folder Tree View (Default structure)"
           >
@@ -867,7 +867,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 : 'hover:opacity-100 opacity-80'
             }`}
             style={{
-              color: explorerViewMode === 'date' ? '#ffffff' : theme.isDark ? '#d4d4d8' : '#1f2937',
+              color: explorerViewMode === 'date' ? '#ffffff' : theme.isDark ? '#d4d4d8' : theme.ui.textMain,
             }}
             title="Date View (Files grouped by 22 Aug, 21 Aug, etc.)"
           >
