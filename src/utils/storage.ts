@@ -2,6 +2,7 @@ import { get, set } from 'idb-keyval';
 import JSZip from 'jszip';
 import { FileNode, Workspace, MAX_NOTE_SIZE_BYTES } from '../types';
 import { DEFAULT_EXCALIDRAW_DATA } from './excalidrawTemplates';
+import { createDefaultKanbanBoard, serializeKanbanData } from './kanbanUtils';
 
 const STORAGE_KEY = 'vscode_notes_workspace_v1';
 const SETTINGS_KEY = 'vscode_notes_settings_v1';
@@ -491,12 +492,22 @@ LIMIT 10;
       createdAt: now - 6 * 3600000, // Today, 6 hrs ago
       updatedAt: now - 45 * 60000,  // Today, 45 mins ago
     },
+    'file_sprint_kanban': {
+      id: 'file_sprint_kanban',
+      name: 'sprint-board.kanban',
+      type: 'file',
+      parentId: rootNotesId,
+      content: serializeKanbanData(createDefaultKanbanBoard('Sprint 14 Kanban & Roadmap')),
+      size: calculateStringSizeBytes(serializeKanbanData(createDefaultKanbanBoard('Sprint 14 Kanban & Roadmap'))),
+      createdAt: now - 2 * 3600000,
+      updatedAt: now - 15 * 60000,
+    },
   };
 
   return {
     version: 1,
     files,
-    openTabIds: ['welcome_file', 'file_architecture_diagram', 'file_meeting_notes', 'file_python_algo', 'file_html_preview'],
+    openTabIds: ['welcome_file', 'file_sprint_kanban', 'file_architecture_diagram', 'file_meeting_notes', 'file_python_algo'],
     activeTabId: 'welcome_file',
     lastUpdated: now,
   };
@@ -528,6 +539,30 @@ export async function loadWorkspace(): Promise<Workspace> {
           saved.openTabIds.splice(1, 0, demoId);
         }
       }
+
+      // Ensure existing users get the demo sprint kanban board if no kanban file exists
+      const hasKanban = Object.values(saved.files).some((f) => f.name.toLowerCase().endsWith('.kanban') || f.name.toLowerCase().endsWith('.kanban.json'));
+      if (!hasKanban) {
+        const kanbanId = 'file_sprint_kanban';
+        const now = Date.now();
+        const kanbanContent = serializeKanbanData(createDefaultKanbanBoard('Sprint 14 Kanban & Roadmap'));
+        const rootNotes = Object.values(saved.files).find((f) => f.type === 'folder' && f.name === 'notes');
+        const parentId = rootNotes ? rootNotes.id : null;
+        saved.files[kanbanId] = {
+          id: kanbanId,
+          name: 'sprint-board.kanban',
+          type: 'file',
+          parentId,
+          content: kanbanContent,
+          size: calculateStringSizeBytes(kanbanContent),
+          createdAt: now - 1800000,
+          updatedAt: now - 120000,
+        };
+        if (!saved.openTabIds.includes(kanbanId)) {
+          saved.openTabIds.splice(1, 0, kanbanId);
+        }
+      }
+
       return saved;
     }
   } catch (err) {

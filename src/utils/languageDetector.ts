@@ -32,6 +32,7 @@ export const SUPPORTED_LANGUAGES: LanguageInfo[] = [
   { id: 'dockerfile', name: 'Dockerfile', extensions: ['dockerfile'], monacoLanguage: 'dockerfile' },
   { id: 'ini', name: 'INI / Config', extensions: ['ini', 'conf', 'env'], monacoLanguage: 'ini' },
   { id: 'excalidraw', name: 'Excalidraw Diagram', extensions: ['excalidraw'], monacoLanguage: 'json' },
+  { id: 'kanban', name: 'Kanban Board', extensions: ['kanban'], monacoLanguage: 'json' },
   { id: 'plaintext', name: 'Plain Text', extensions: ['txt', 'log', 'text'], monacoLanguage: 'plaintext' },
 ];
 
@@ -81,5 +82,10 @@ export function isHtmlFile(filename: string): boolean {
 export function isExcalidrawFile(filename: string): boolean {
   const lower = filename.toLowerCase();
   return lower.endsWith('.excalidraw') || lower.endsWith('.excalidraw.json') || lower.endsWith('.excalidraw.svg') || lower.endsWith('.excalidraw.png');
+}
+
+export function isKanbanFile(filename: string): boolean {
+  const lower = filename.toLowerCase();
+  return lower.endsWith('.kanban') || lower.endsWith('.kanban.json');
 }
 

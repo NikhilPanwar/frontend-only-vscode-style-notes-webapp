@@ -15,8 +15,9 @@ import {
   Globe,
   FileType as FileTypeIcon,
   PenTool,
+  Kanban,
 } from 'lucide-react';
-import { getFileExtension, isImageFile, isExcalidrawFile } from './languageDetector';
+import { getFileExtension, isImageFile, isExcalidrawFile, isKanbanFile } from './languageDetector';
 
 export interface FileIconProps {
   filename?: string;
@@ -47,6 +48,10 @@ export const FileIconComponent: React.FC<FileIconProps> = ({
 
   if (isExcalidrawFile(filename)) {
     return <PenTool size={size} className={`text-violet-400 shrink-0 ${className}`} />;
+  }
+
+  if (isKanbanFile(filename)) {
+    return <Kanban size={size} className={`text-indigo-400 shrink-0 ${className}`} />;
   }
 
 

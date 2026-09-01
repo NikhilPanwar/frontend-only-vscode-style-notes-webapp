@@ -18,6 +18,7 @@ import {
   PenTool,
   FolderTree,
   Calendar,
+  Kanban,
 } from 'lucide-react';
 import { FileNode, ThemeType } from '../types';
 import { FileIconComponent } from '../utils/fileIcons';
@@ -772,6 +773,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
             <FilePlus size={14} />
           </button>
           <button
+            id="explorer-btn-new-kanban"
+            onClick={() => {
+              setCreatingType('file');
+              setCreatingParentId(null);
+              setCreatingName('tasks.kanban');
+            }}
+            className="p-1 hover:text-cyan-400 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            title="New Kanban Board (.kanban)"
+          >
+            <Kanban size={14} />
+          </button>
+          <button
             id="explorer-btn-new-diagram"
             onClick={() => {
               setCreatingType('file');
@@ -965,6 +978,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 onClick={() => {
                   setCreatingType('file');
                   setCreatingParentId(contextMenu.nodeId);
+                  setCreatingName('tasks.kanban');
+                  setContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-left hover:bg-blue-600 hover:text-white transition-colors"
+              >
+                <Kanban size={13} className="text-cyan-400" />
+                <span>New Kanban Board (.kanban)</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCreatingType('file');
+                  setCreatingParentId(contextMenu.nodeId);
                   setCreatingName('diagram.excalidraw');
                   setContextMenu(null);
                 }}
@@ -1137,6 +1162,18 @@ export const FileTree: React.FC<FileTreeProps> = ({
               >
                 <FilePlus size={13} />
                 <span>New File in Root</span>
+              </button>
+              <button
+                onClick={() => {
+                  setCreatingType('file');
+                  setCreatingParentId(null);
+                  setCreatingName('tasks.kanban');
+                  setContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-left hover:bg-blue-600 hover:text-white transition-colors"
+              >
+                <Kanban size={13} className="text-cyan-400" />
+                <span>New Kanban Board in Root (.kanban)</span>
               </button>
               <button
                 onClick={() => {

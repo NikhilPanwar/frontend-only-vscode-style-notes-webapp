@@ -2,10 +2,11 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Editor, { Monaco, OnMount } from '@monaco-editor/react';
 import { FileNode, EditorSettings, ThemeType, CursorPosition, MAX_NOTE_SIZE_BYTES } from '../types';
 import { THEMES, registerMonacoThemes } from '../utils/themes';
-import { detectLanguageByFilename, isImageFile, isMarkdownFile, isHtmlFile, isExcalidrawFile } from '../utils/languageDetector';
+import { detectLanguageByFilename, isImageFile, isMarkdownFile, isHtmlFile, isExcalidrawFile, isKanbanFile } from '../utils/languageDetector';
 import { MarkdownPreview } from './MarkdownPreview';
 import { HtmlPreview } from './HtmlPreview';
 import { ExcalidrawEditor } from './ExcalidrawEditor';
+import { KanbanEditor } from './KanbanEditor';
 import { ImageViewer } from './ImageViewer';
 import { EmptyEditorState } from './EmptyEditorState';
 import { formatBytes, calculateStringSizeBytes } from '../utils/storage';
@@ -206,12 +207,21 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   const isMd = isMarkdownFile(activeFile.name);
   const isHtml = isHtmlFile(activeFile.name);
   const isExcalidraw = isExcalidrawFile(activeFile.name);
-  const supportsPreview = isMd || isHtml || isExcalidraw;
+  const isKanban = isKanbanFile(activeFile.name);
+  const supportsPreview = isMd || isHtml || isExcalidraw || isKanban;
   const previewMode = settings.previewMode;
 
-  // Determine what to render based on preview mode
-  const showEditor = previewMode === 'editor' || previewMode === 'split' || !supportsPreview;
-  const showPreview = supportsPreview && (previewMode === 'preview' || previewMode === 'split');
+  // For kanban or excalidraw files, when in preview mode or default split/preview, show the visual workspace
+  const showEditor = previewMode === 'editor' || (previewMode === 'split' && !isKanban && !isExcalidraw) || (!supportsPreview);
+  const showPreview = supportsPreview && (previewMode === 'preview' || previewMode === 'split' || isKanban || isExcalidraw);
+
+  // If in split mode specifically for kanban/excalidraw, allow split if user selected 'split'
+  const effectiveShowEditor = previewMode === 'editor' || (previewMode === 'split');
+  const effectiveShowPreview = (previewMode === 'preview' || previewMode === 'split' || isKanban || isExcalidraw) && supportsPreview;
+
+  // Final visibility flags
+  const renderEditor = previewMode === 'editor' || (previewMode === 'split') || (!supportsPreview);
+  const renderPreview = supportsPreview && (previewMode === 'preview' || previewMode === 'split' || ((isKanban || isExcalidraw) && previewMode !== 'editor'));
 
   return (
     <div
@@ -248,10 +258,10 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       {/* Main Workspace Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor Pane */}
-        {showEditor && (
+        {renderEditor && (
           <div
             className={`h-full flex-1 relative ${
-              showPreview ? 'border-r' : ''
+              renderPreview ? 'border-r' : ''
             }`}
             style={{
               borderColor: theme.ui.border,
@@ -295,8 +305,8 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           </div>
         )}
 
-        {/* Live Preview Pane (Markdown, HTML, or Excalidraw) */}
-        {showPreview && (
+        {/* Live Preview Pane (Markdown, HTML, Excalidraw, or Kanban) */}
+        {renderPreview && (
           <div className="h-full flex-1 overflow-hidden">
             {isMd && (
               <MarkdownPreview
@@ -317,6 +327,19 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
                 key={activeFile.id}
                 fileId={activeFile.id}
                 content={activeFile.content || ''}
+                filename={activeFile.name}
+                currentTheme={currentTheme}
+                onUpdateContent={(fId, newContent) => {
+                  setLocalContent(newContent);
+                  onContentChange(fId, newContent);
+                }}
+              />
+            )}
+            {isKanban && (
+              <KanbanEditor
+                key={activeFile.id}
+                fileId={activeFile.id}
+                content={localContent || ''}
                 filename={activeFile.name}
                 currentTheme={currentTheme}
                 onUpdateContent={(fId, newContent) => {

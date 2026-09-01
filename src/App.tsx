@@ -26,8 +26,9 @@ import {
 } from './utils/storage';
 import { TreeClipboardState } from './components/FileTree';
 import { THEMES } from './utils/themes';
-import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile } from './utils/languageDetector';
+import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile, isKanbanFile } from './utils/languageDetector';
 import { EMPTY_EXCALIDRAW_DATA } from './utils/excalidrawTemplates';
+import { createEmptyKanbanBoard, serializeKanbanData } from './utils/kanbanUtils';
 import { TitleBar } from './components/TitleBar';
 import { ActivityBar } from './components/ActivityBar';
 import { Sidebar } from './components/Sidebar';
@@ -44,6 +45,7 @@ import {
   FilePlus,
   FolderPlus,
   PenTool,
+  Kanban,
   WrapText,
   Palette,
   Download,
@@ -253,7 +255,8 @@ export default function App() {
     const targetNode = workspace.files[fileId];
     if (targetNode) {
       const isExcal = isExcalidrawFile(targetNode.name);
-      setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      const isKanban = isKanbanFile(targetNode.name);
+      setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
     }
 
     setWorkspace((prev) => {
@@ -261,7 +264,8 @@ export default function App() {
       const fileToOpen = prev.files[fileId];
       if (fileToOpen) {
         const isExcal = isExcalidrawFile(fileToOpen.name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(fileToOpen.name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
       }
       const alreadyOpen = prev.openTabIds.includes(fileId);
       let newTabs = alreadyOpen ? prev.openTabIds : [...prev.openTabIds, fileId];
@@ -302,7 +306,8 @@ export default function App() {
 
       if (newActiveId && prev.files[newActiveId]) {
         const isExcal = isExcalidrawFile(prev.files[newActiveId].name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(prev.files[newActiveId].name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
       }
 
       return {
@@ -320,7 +325,8 @@ export default function App() {
       const target = prev.files[targetTabId];
       if (target) {
         const isExcal = isExcalidrawFile(target.name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(target.name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
       }
       return {
         ...prev,
@@ -343,7 +349,8 @@ export default function App() {
       }
       if (newActive && prev.files[newActive]) {
         const isExcal = isExcalidrawFile(prev.files[newActive].name);
-        setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+        const isKanban = isKanbanFile(prev.files[newActive].name);
+        setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
       }
       return {
         ...prev,
@@ -375,7 +382,8 @@ export default function App() {
     const now = Date.now();
 
     const isExcalInitial = isExcalidrawFile(cleanName);
-    setSettings((s) => ({ ...s, previewMode: isExcalInitial ? 'preview' : 'editor' }));
+    const isKanbanInitial = isKanbanFile(cleanName);
+    setSettings((s) => ({ ...s, previewMode: (isExcalInitial || isKanbanInitial) ? 'preview' : 'editor' }));
 
     setWorkspace((prev) => {
       if (!prev) return prev;
@@ -383,12 +391,16 @@ export default function App() {
       const id = generateId();
 
       const isExcal = isExcalidrawFile(uniqueName);
-      setSettings((s) => ({ ...s, previewMode: isExcal ? 'preview' : 'editor' }));
+      const isKanban = isKanbanFile(uniqueName);
+      setSettings((s) => ({ ...s, previewMode: (isExcal || isKanban) ? 'preview' : 'editor' }));
 
-      const finalContent =
-        !content && isExcal
-          ? JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2)
-          : content;
+      let finalContent = content;
+      if (!content && isExcal) {
+        finalContent = JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2);
+      } else if (!content && isKanban) {
+        const boardTitle = uniqueName.replace(/\.kanban(\.json)?$/i, '').replace(/[-_]/g, ' ');
+        finalContent = serializeKanbanData(createEmptyKanbanBoard(boardTitle.charAt(0).toUpperCase() + boardTitle.slice(1)));
+      }
       const size = calculateStringSizeBytes(finalContent);
 
       const newFile: FileNode = {
@@ -992,6 +1004,13 @@ export default function App() {
         icon: <FilePlus size={14} />,
         shortcut: 'Ctrl+N',
         action: () => handleCreateFile('untitled.txt', null),
+      },
+      {
+        id: 'cmd-new-kanban',
+        label: 'File: New Kanban Board (.kanban)',
+        category: 'File',
+        icon: <Kanban size={14} className="text-cyan-400" />,
+        action: () => handleCreateFile('tasks.kanban', null),
       },
       {
         id: 'cmd-new-diagram',
