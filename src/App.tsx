@@ -27,7 +27,7 @@ import {
 import { TreeClipboardState } from './components/FileTree';
 import { THEMES } from './utils/themes';
 import { detectLanguageByFilename, isMarkdownFile, isHtmlFile, isImageFile, isExcalidrawFile, isKanbanFile } from './utils/languageDetector';
-import { EMPTY_EXCALIDRAW_DATA } from './utils/excalidrawTemplates';
+import { EMPTY_EXCALIDRAW_DATA, getThemeCanvasColor } from './utils/excalidrawTemplates';
 import { createEmptyKanbanBoard, serializeKanbanData } from './utils/kanbanUtils';
 import { TitleBar } from './components/TitleBar';
 import { ActivityBar } from './components/ActivityBar';
@@ -397,7 +397,17 @@ export default function App() {
 
       let finalContent = content;
       if (!content && isExcal) {
-        finalContent = JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2);
+        finalContent = JSON.stringify(
+          {
+            ...EMPTY_EXCALIDRAW_DATA,
+            appState: {
+              ...EMPTY_EXCALIDRAW_DATA.appState,
+              viewBackgroundColor: getThemeCanvasColor(settings.theme),
+            },
+          },
+          null,
+          2
+        );
       } else if (!content && isKanban) {
         const boardTitle = uniqueName.replace(/\.kanban(\.json)?$/i, '').replace(/[-_]/g, ' ');
         finalContent = serializeKanbanData(createEmptyKanbanBoard(boardTitle.charAt(0).toUpperCase() + boardTitle.slice(1)));

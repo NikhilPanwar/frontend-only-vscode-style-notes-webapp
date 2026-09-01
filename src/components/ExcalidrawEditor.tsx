@@ -3,7 +3,12 @@ import { Excalidraw, exportToBlob, exportToSvg } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { ThemeType } from '../types';
 import { THEMES } from '../utils/themes';
-import { parseExcalidrawContent, EMPTY_EXCALIDRAW_DATA } from '../utils/excalidrawTemplates';
+import {
+  parseExcalidrawContent,
+  EMPTY_EXCALIDRAW_DATA,
+  DEFAULT_THEME_BG_COLORS,
+  getThemeCanvasColor,
+} from '../utils/excalidrawTemplates';
 import { Download, Image as ImageIcon, Sparkles, RefreshCw, Check } from 'lucide-react';
 
 interface ExcalidrawEditorProps {
@@ -22,6 +27,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
   onUpdateContent,
 }) => {
   const theme = THEMES[currentTheme];
+  const canvasBg = getThemeCanvasColor(currentTheme);
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [exporting, setExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -38,19 +44,65 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
   const isInternalUpdateRef = useRef<boolean>(false);
   const debounceTimerRef = useRef<any>(null);
 
-  // Parse initial data once for this component instance (keyed by fileId in parent)
+  // Parse initial data once for this component instance with the current theme canvas background
   const initialData = useMemo(() => {
-    const parsed = parseExcalidrawContent(content);
+    const parsed = parseExcalidrawContent(content, canvasBg);
     const initialJson = JSON.stringify(parsed, null, 2);
     lastSavedJsonRef.current = initialJson;
     latestSceneDataRef.current = initialJson;
     return parsed;
-  }, []);
+  }, [fileId]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+
+  // Sync canvas background color whenever the workspace theme changes (Solarized Light/Dark, Monokai, Light+, Dark+, etc.)
+  useEffect(() => {
+    if (!excalidrawAPI) return;
+    try {
+      const currentAppState = excalidrawAPI.getAppState();
+      const currentBg = (currentAppState?.viewBackgroundColor || '').toLowerCase();
+      const targetBg = canvasBg;
+
+      // Check if current background is undefined, empty, or one of the standard theme backgrounds
+      const isThemeOrDefaultBg = !currentBg || DEFAULT_THEME_BG_COLORS.has(currentBg);
+
+      if (isThemeOrDefaultBg && currentBg !== targetBg.toLowerCase()) {
+        excalidrawAPI.updateScene({
+          appState: {
+            ...currentAppState,
+            viewBackgroundColor: targetBg,
+          },
+          commitToHistory: false,
+        });
+
+        // Also update the scene data cache
+        const elements = excalidrawAPI.getSceneElements() || [];
+        const files = excalidrawAPI.getFiles() || {};
+        const nonDeletedElements = elements.filter((el: any) => !el.isDeleted);
+        const dataToSave = {
+          type: 'excalidraw',
+          version: 2,
+          source: 'https://excalidraw.com',
+          elements: nonDeletedElements,
+          appState: {
+            viewBackgroundColor: targetBg,
+            gridSize: currentAppState?.gridSize || null,
+          },
+          files: files,
+        };
+        const updatedJson = JSON.stringify(dataToSave, null, 2);
+        latestSceneDataRef.current = updatedJson;
+        lastSavedJsonRef.current = updatedJson;
+        isInternalUpdateRef.current = true;
+        onUpdateContentRef.current(fileIdRef.current, updatedJson);
+      }
+    } catch {
+      // Ignore scene update errors
+    }
+  }, [currentTheme, canvasBg, excalidrawAPI]);
 
   // Sync external text edits (e.g. from Monaco in split view) into Excalidraw canvas
   useEffect(() => {
@@ -62,13 +114,13 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
 
     if (content && content !== lastSavedJsonRef.current && content !== latestSceneDataRef.current) {
       try {
-        const parsed = parseExcalidrawContent(content);
+        const parsed = parseExcalidrawContent(content, canvasBg);
         lastSavedJsonRef.current = content;
         latestSceneDataRef.current = content;
         excalidrawAPI.updateScene({
           elements: parsed.elements || [],
           appState: {
-            viewBackgroundColor: parsed.appState?.viewBackgroundColor || (theme.isDark ? '#121212' : '#ffffff'),
+            viewBackgroundColor: parsed.appState?.viewBackgroundColor || canvasBg,
             ...(parsed.appState || {}),
           },
           files: parsed.files || {},
@@ -78,7 +130,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
         // Ignore parsing errors during intermediate typing in Monaco
       }
     }
-  }, [content, excalidrawAPI, theme.isDark]);
+  }, [content, excalidrawAPI, canvasBg]);
 
   // Handle internal updates from Excalidraw canvas to workspace state & IndexedDB
   const handleExcalidrawChange = useCallback(
@@ -91,7 +143,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
         source: 'https://excalidraw.com',
         elements: nonDeletedElements,
         appState: {
-          viewBackgroundColor: appState?.viewBackgroundColor || (theme.isDark ? '#121212' : '#ffffff'),
+          viewBackgroundColor: appState?.viewBackgroundColor || canvasBg,
           gridSize: appState?.gridSize || null,
         },
         files: files || {},
@@ -114,7 +166,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
         }, 100);
       }
     },
-    [theme.isDark]
+    [canvasBg]
   );
 
   // Clean unmount check to guarantee latest scene is persisted immediately if user switches tabs
@@ -145,6 +197,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
           ...appState,
           exportWithDarkMode: theme.isDark,
           exportBackground: true,
+          viewBackgroundColor: appState?.viewBackgroundColor || canvasBg,
         },
         files,
         mimeType: 'image/png',
@@ -180,6 +233,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
           ...appState,
           exportWithDarkMode: theme.isDark,
           exportBackground: true,
+          viewBackgroundColor: appState?.viewBackgroundColor || canvasBg,
         },
         files,
       });
@@ -202,14 +256,28 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
     }
   };
 
-  // Clear Canvas to empty
+  // Clear Canvas to empty with current theme background
   const handleClearCanvas = () => {
     if (!excalidrawAPI) return;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
+    const emptyData = {
+      ...EMPTY_EXCALIDRAW_DATA,
+      appState: {
+        ...EMPTY_EXCALIDRAW_DATA.appState,
+        viewBackgroundColor: canvasBg,
+      },
+    };
     excalidrawAPI.resetScene();
-    const emptyJson = JSON.stringify(EMPTY_EXCALIDRAW_DATA, null, 2);
+    excalidrawAPI.updateScene({
+      elements: [],
+      appState: {
+        viewBackgroundColor: canvasBg,
+      },
+      commitToHistory: true,
+    });
+    const emptyJson = JSON.stringify(emptyData, null, 2);
     lastSavedJsonRef.current = emptyJson;
     latestSceneDataRef.current = emptyJson;
     isInternalUpdateRef.current = true;
@@ -221,7 +289,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
     <div
       id="excalidraw-editor-container"
       className="w-full h-full flex flex-col relative overflow-hidden select-none"
-      style={{ backgroundColor: theme.ui.bgEditor }}
+      style={{ backgroundColor: canvasBg }}
     >
       {/* Excalidraw Action Bar */}
       <div
@@ -288,7 +356,13 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
       </div>
 
       {/* Excalidraw Main Canvas Viewport */}
-      <div className="flex-1 w-full h-[calc(100%-36px)] relative">
+      <div
+        className="flex-1 w-full h-[calc(100%-36px)] relative excalidraw-canvas-container"
+        style={{
+          backgroundColor: canvasBg,
+          ['--excalidraw-theme-bg' as any]: canvasBg,
+        }}
+      >
         <Excalidraw
           excalidrawAPI={(api) => setExcalidrawAPI(api)}
           initialData={initialData}
@@ -303,7 +377,7 @@ export const ExcalidrawEditor: React.FC<ExcalidrawEditorProps> = ({
               },
               loadScene: true,
               saveToActiveFile: true,
-              toggleTheme: true,
+              toggleTheme: false,
             },
           }}
         />

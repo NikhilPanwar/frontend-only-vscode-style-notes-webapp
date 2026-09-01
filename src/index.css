@@ -38,3 +38,26 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Excalidraw Canvas & Theme Background Integration */
+.excalidraw-canvas-container {
+  background-color: var(--excalidraw-theme-bg, #ffffff) !important;
+}
+
+.excalidraw-canvas-container .excalidraw,
+.excalidraw-canvas-container .excalidraw .excalidraw-container,
+.excalidraw-canvas-container .excalidraw .canvas-wrapper {
+  --color-canvas-bg: var(--excalidraw-theme-bg, #ffffff) !important;
+  background-color: var(--excalidraw-theme-bg, #ffffff) !important;
+}
+
+/* Disable the inverted CSS filter on dark mode canvas so true theme background colors (Solarized Dark, Monokai, Dark+) render accurately */
+.excalidraw-canvas-container .excalidraw {
+  --theme-filter: none !important;
+}
+
+.excalidraw-canvas-container .excalidraw.theme--dark canvas,
+.excalidraw-canvas-container .excalidraw canvas {
+  filter: none !important;
+}
+

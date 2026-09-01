@@ -463,7 +463,42 @@ export const FLOWCHART_EXCALIDRAW_DATA = {
   files: {},
 };
 
-export function parseExcalidrawContent(rawText: string): any {
+export const DEFAULT_THEME_BG_COLORS = new Set([
+  '#ffffff',
+  '#121212',
+  '#1e1e1e',
+  '#181818',
+  '#002b36',
+  '#00212b',
+  '#fdf6e3',
+  '#eee8d5',
+  '#272822',
+  '#1e1f1c',
+  '#000000',
+  'transparent',
+]);
+
+export function getThemeCanvasColor(themeId: string): string {
+  switch (themeId) {
+    case 'vs-light':
+      return '#ffffff';
+    case 'vs-dark':
+      return '#1e1e1e';
+    case 'solarized-light':
+      return '#fdf6e3';
+    case 'solarized-dark':
+      return '#002b36';
+    case 'monokai':
+      return '#272822';
+    case 'high-contrast-dark':
+      return '#000000';
+    default:
+      return '#ffffff';
+  }
+}
+
+export function parseExcalidrawContent(rawText: string, defaultBgColor: string = '#ffffff'): any {
+  const fallbackBg = defaultBgColor || '#ffffff';
   if (!rawText || !rawText.trim()) {
     return {
       type: 'excalidraw',
@@ -471,7 +506,7 @@ export function parseExcalidrawContent(rawText: string): any {
       source: 'https://excalidraw.com',
       elements: [],
       appState: {
-        viewBackgroundColor: '#ffffff',
+        viewBackgroundColor: fallbackBg,
         gridSize: null,
       },
       files: {},
@@ -480,15 +515,20 @@ export function parseExcalidrawContent(rawText: string): any {
   try {
     const parsed = JSON.parse(rawText);
     if (typeof parsed === 'object' && parsed !== null) {
+      const existingBg = parsed.appState?.viewBackgroundColor;
+      // If no bg or if it's one of the standard theme/default colors, apply the active theme background
+      const shouldApplyThemeBg = !existingBg || DEFAULT_THEME_BG_COLORS.has(String(existingBg).toLowerCase());
+      const viewBackgroundColor = shouldApplyThemeBg ? fallbackBg : existingBg;
+
       return {
         type: 'excalidraw',
         version: 2,
         source: 'https://excalidraw.com',
         elements: Array.isArray(parsed.elements) ? parsed.elements : [],
         appState: {
-          viewBackgroundColor: parsed.appState?.viewBackgroundColor || '#ffffff',
           gridSize: parsed.appState?.gridSize || null,
           ...(parsed.appState || {}),
+          viewBackgroundColor,
         },
         files: parsed.files || {},
       };
@@ -502,7 +542,7 @@ export function parseExcalidrawContent(rawText: string): any {
     source: 'https://excalidraw.com',
     elements: [],
     appState: {
-      viewBackgroundColor: '#ffffff',
+      viewBackgroundColor: fallbackBg,
       gridSize: null,
     },
     files: {},
